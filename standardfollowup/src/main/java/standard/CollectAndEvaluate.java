@@ -82,10 +82,11 @@ public class CollectAndEvaluate {
 		List<String> differentFiles = new ArrayList<>();
 		try (BufferedWriter writer =  Files.newBufferedWriter(newFilesDir.resolve("protocoll.txt"))) {
 			for (String keptFile : keptSince) {
-				File oldFile = oldFilesDir.resolve(keptFile).toFile();
+				Path oldFilePath = oldFilesDir.resolve(keptFile);
+				File oldFile = oldFilePath.toFile();
 				File newFile = newFilesDir.resolve(keptFile).toFile();
 				if (common.areFilesIdentical(oldFile, newFile)) {
-					//				Files.delete(oldFilesDir);
+					Files.delete(oldFilePath);
 				} else {
 					differentFiles.add(keptFile);
 					writer.append("cmp ");
