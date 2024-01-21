@@ -17,9 +17,11 @@ import org.jsoup.nodes.Document;
 public class CommonFunctions {
 	
 	private static CommonFunctions INSTANCE;
-	private static final Path STANDARDS_DIR = Paths.get("C:/temp/Standards");
+	
+	private static final String DEFAULT_DIR = "C:/temp/Standards";
 	private static final SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
 	
+	private final Path STANDARDS_DIR;
 	protected final Path pool;
 	protected final String uriPrefix;
 	protected final Path newFilesDir;
@@ -28,7 +30,8 @@ public class CommonFunctions {
 		return INSTANCE;
 	}
 	
-	public CommonFunctions(String referenceArt, String uriPrefix) throws IOException {
+	public CommonFunctions(String referenceArt, String uriPrefix, String[] args) throws IOException {
+		STANDARDS_DIR = Paths.get(args.length == 0 ? DEFAULT_DIR : args[0]);
 		this.pool = STANDARDS_DIR.resolve(referenceArt);
 		this.uriPrefix = uriPrefix;
 		String newDirName = df.format(new Date());

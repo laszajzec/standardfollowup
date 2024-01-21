@@ -21,16 +21,24 @@ import org.apache.commons.io.FileUtils;
 
 import standard.ec.publichealth.ReadPublicHealth;
 
+/**
+ * Collect documents of medical regulation
+ * Compare with last verions and report differences
+ */
 public class CollectAndEvaluate {
 
+	private static final String PROTOCOLL_TXT = "protocoll.txt";
 	private final CommonFunctions common;
 	
+	/**
+	 * @param Directory of collected documents or c:\temp\Standards if absent
+	 */
 	public static void main(String[] args) throws IOException, URISyntaxException {
 		new CollectAndEvaluate(args);
 	}
 	
 	public CollectAndEvaluate(String[] args) throws IOException, URISyntaxException {
-		common = new CommonFunctions("PublicHealth", "https://health.ec.europa.eu");
+		common = new CommonFunctions("PublicHealth", "https://health.ec.europa.eu", args);
 		collect();
 		evaluate();
 	}
@@ -78,9 +86,10 @@ public class CollectAndEvaluate {
 		createdSince.removeAll(oldFiles);
 		Set<String> droppedSince = new TreeSet<>(oldFiles);
 		droppedSince.removeAll(newFiles);
+		droppedSince.remove(PROTOCOLL_TXT);
 		Collection<String> keptSince = CollectionUtils.intersection(newFiles, oldFiles);
 		List<String> differentFiles = new ArrayList<>();
-		try (BufferedWriter writer =  Files.newBufferedWriter(newFilesDir.resolve("protocoll.txt"))) {
+		try (BufferedWriter writer =  Files.newBufferedWriter(newFilesDir.resolve(PROTOCOLL_TXT))) {
 			for (String keptFile : keptSince) {
 				Path oldFilePath = oldFilesDir.resolve(keptFile);
 				File oldFile = oldFilePath.toFile();
@@ -100,7 +109,7 @@ public class CollectAndEvaluate {
 			printList(createdSince, "New standard", "No new standard!", writer);
 			printList(differentFiles, "Changed", "No changes!", writer);
 		}
-		System.out.format("Comparing %s with %s%n", newFilesDir, oldFilesDir);
+		System.out.format("Compared %s with %s%n", newFilesDir, oldFilesDir);
 
 	}
 	
