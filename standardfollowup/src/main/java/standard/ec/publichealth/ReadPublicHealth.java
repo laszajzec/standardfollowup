@@ -23,7 +23,8 @@ public class ReadPublicHealth {
 	List<String> ignore = Arrays.asList(new String[] {"#main-content", "#MainContent", "https://commission.europa.eu/index_\\w\\w", 
 			"https://health.ec.europa.eu/medical-devices-sector/new-regulations/guidance-mdcg-endorsed-documents-and-other-guidance_.*",
 			"/index_\\w\\w", "/medical-devices-sector_en", "/medical-devices-sector/new-regulations_\\w\\w",
-			""}); 
+			".*covid-19.*"
+			}); 
 	
 	public void downloadFiles() throws IOException, URISyntaxException {
 		String blogUrl = "https://health.ec.europa.eu/medical-devices-sector/new-regulations/guidance-mdcg-endorsed-documents-and-other-guidance_en";
@@ -38,6 +39,7 @@ public class ReadPublicHealth {
 		Elements links = doc.select("a");
 		for (Element e : links) {
 			String linkAttr = e.attr("href");
+			System.out.println(linkAttr);
 			if (linkAttr.isEmpty() || ignore.stream().anyMatch(pattern -> linkAttr.matches(pattern))) {
 				if (!linkAttr.isEmpty()) System.out.println("Ignore: " + linkAttr);
 			} else  if (linkAttr.contains("/document/download/")) {

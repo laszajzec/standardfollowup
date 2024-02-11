@@ -1,6 +1,7 @@
 package standard;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -8,7 +9,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.jsoup.Jsoup;
@@ -18,26 +23,36 @@ public class CommonFunctions {
 	
 	private static CommonFunctions INSTANCE;
 	
-	private static final String DEFAULT_DIR = "C:/temp/Standards";
 	private static final SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
 	
-	private final Path STANDARDS_DIR;
 	protected final Path pool;
 	protected final String uriPrefix;
-	protected final Path newFilesDir;
+	protected Path newFilesDir;
 	
 	public static CommonFunctions get() {
 		return INSTANCE;
 	}
 	
-	public CommonFunctions(String referenceArt, String uriPrefix, String[] args) throws IOException {
-		STANDARDS_DIR = Paths.get(args.length == 0 ? DEFAULT_DIR : args[0]);
-		this.pool = STANDARDS_DIR.resolve(referenceArt);
+	public CommonFunctions(String referenceArt, String uriPrefix, Path baseDir) throws IOException {
+		this.pool = baseDir.resolve(referenceArt);
+		if (!Files.isDirectory(pool)) {
+			System.out.println("Not correct directory: " + pool.toString());
+			throw new FileNotFoundException(pool.toString());
+		}
 		this.uriPrefix = uriPrefix;
+		INSTANCE = this;
+	}
+	
+	public void createNewDir() throws IOException {
 		String newDirName = df.format(new Date());
 		newFilesDir = pool.resolve(newDirName);
-		INSTANCE = this;
 		Files.createDirectory(newFilesDir);
+	}
+	
+	public Path getLastButOneDir() {
+		List<File> subdirs = new ArrayList<>(Arrays.asList(getPool().toFile().listFiles()));
+		Collections.sort(subdirs);
+		return subdirs.size() > 1 ? subdirs.get(subdirs.size()-2).toPath() : null;
 	}
 
 	public boolean areFilesIdentical(File file1, File file2) throws IOException {
