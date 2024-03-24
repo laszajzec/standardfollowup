@@ -4,9 +4,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -14,10 +12,13 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import standard.CommonFunctions;
+import standard.RegulatorySource;
 
-public class ReadPublicHealth {
+public class ReadPublicHealth implements RegulatorySource {
 
-	private Set<String> uriAlreadyDownloaded = new HashSet<>();
+	private static final String blogUrl = "https://health.ec.europa.eu/medical-devices-sector/new-regulations/guidance-mdcg-endorsed-documents-and-other-guidance_en";
+	private static final String prefix = "https://health.ec.europa.eu";
+
 	private CommonFunctions common;
 
 	List<String> ignore = Arrays.asList(new String[] {"#main-content", "#MainContent", "https://commission.europa.eu/index_\\w\\w", 
@@ -26,13 +27,31 @@ public class ReadPublicHealth {
 			".*covid-19.*"
 			}); 
 	
-	public void downloadFiles() throws IOException, URISyntaxException {
-		String blogUrl = "https://health.ec.europa.eu/medical-devices-sector/new-regulations/guidance-mdcg-endorsed-documents-and-other-guidance_en";
+
+	@Override
+	public void collect() {
 		common = CommonFunctions.get();
-		Document doc = Jsoup.connect(blogUrl).get();
-		recurseLink(doc);
+		Document doc;
+		try {
+			doc = Jsoup.connect(blogUrl).get();
+			recurseLink(doc);
+		} catch (IOException | URISyntaxException e) {
+			System.out.println("Exception in ReadPublicHealth collect: " + e.getMessage());
+			e.printStackTrace();
+		}
 	}
-	
+
+	@Override
+	public void removeUnchanged() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void evaluate() {
+		// TODO Auto-generated method stub
+		
+	}
 	private void recurseLink(Document doc) throws IOException, URISyntaxException {
 		List<String> fileRefs = new ArrayList<>();
 		List<String> uriRefs = new ArrayList<>();
@@ -53,18 +72,10 @@ public class ReadPublicHealth {
 	}
 	
 	private void downloadFiles(List<String> fileRefs) throws IOException, URISyntaxException {
+//		common.createSubdirectory("pubhealth");
 		for (String fileRef : fileRefs) {
-			common.downloadFile(fileRef);
-		}
-	}
-
-	private void downloadLinks(List<String> uriRefs) throws IOException, URISyntaxException {
-		for (String uriRef : uriRefs) {
-			if (!uriAlreadyDownloaded.contains(uriRef)) {
-				uriAlreadyDownloaded.add(uriRef);
-				final Document doc = common.downloadLink(uriRef);
-				recurseLink(doc);
-			}
+			String corrected = fileRef.startsWith("http") ? fileRef : prefix + fileRef;
+			common.downloadFileToSub(corrected, CommonFunctions.DownloadDir.CONTENT, "pubhealth");
 		}
 	}
 

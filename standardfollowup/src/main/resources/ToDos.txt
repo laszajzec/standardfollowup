@@ -1,0 +1,6 @@
+ISO
+ - Check PDF structure
+ - Chapter names must be exact
+ - pre- and postfix can change
+ - file name as date must be as today
+ 
