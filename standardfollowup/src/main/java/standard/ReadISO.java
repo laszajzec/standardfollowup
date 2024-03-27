@@ -28,15 +28,18 @@ public class ReadISO implements RegulatorySource {
 	private static final String[] PREFIXES = new String[]{"/TS", "/TR", "/PAS", "/IEC TR", "/IEC TS", "/IEC", "/ASTM", "/PRF", "/IEEE"};
 	private static final Pattern ISO_DATE_PATTERN = Pattern.compile("ISOupdate[\\s-](\\w+)[\\s-](\\d+)\\..*");
 
-	private CommonFunctions common;
+	private final CommonFunctions common;
 	private List<String> ignore = new ArrayList<>();
 	private List<Deviation> changedStandards = new ArrayList<>();
 	private List<Deviation> withdrawnedStandards = new ArrayList<>();
 	private List<Path> fileList;
 	
+	public ReadISO() {
+		common = CommonFunctions.get();
+	}
+	
 	@Override
 	public void collect() {
-		common = CommonFunctions.get();
 		try {
 			fileList = downloadFiles();
 		} catch (IOException | URISyntaxException e) {
@@ -143,17 +146,19 @@ public class ReadISO implements RegulatorySource {
 	}
 	
 	private void selectIsoNumbers(int startIndex, int endIndex, List<String> content, List<Deviation> result, Path inFile) {
-		boolean wasIso = false;
+		boolean continuationExpectedInNextLine = false;
 		for (int i = startIndex; i < endIndex; i++) {
 			String line = content.get(i).trim();
-			if (wasIso && !line.isEmpty() && Character.isDigit(line.charAt(0))) {
-				canBeIsoNr(line);
-				wasIso = false;
+			if (continuationExpectedInNextLine && !line.isEmpty() && Character.isDigit(line.charAt(0))) {
+				if (canBeIsoNr(line)) {
+					result.add(new Deviation(line, inFile));
+				}
+				continuationExpectedInNextLine = false;
 			} else if (line.startsWith("ISO") || line.startsWith("IWA") || line.startsWith("IEC")) {
 				String rest = line.substring(3).trim();
 				rest = removeDeliveryId(rest, PREFIXES);
 				if (rest.isEmpty()) {
-					wasIso = true;
+					continuationExpectedInNextLine = true;
 				} else if (Character.isDigit(rest.charAt(0))) {
 					if (i < endIndex - 2) {
 						String nextLine = content.get(i+1).trim();
@@ -165,7 +170,7 @@ public class ReadISO implements RegulatorySource {
 					if (canBeIsoNr(rest)) {
 						result.add(new Deviation(rest, inFile));
 					}
-					wasIso = false;
+					continuationExpectedInNextLine = false;
 				}
 			} else {
 				if (!content.get(i).trim().isEmpty() && content.get(i).matches(".*\\d\\d\\d\\d.*")) {

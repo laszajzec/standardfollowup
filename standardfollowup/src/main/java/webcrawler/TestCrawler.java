@@ -133,7 +133,7 @@ public class TestCrawler {
 	}
 	
 	private void selenium() throws IOException {
-		CommonFunctions comm = new CommonFunctions(Paths.get("C:/temp/Standards"));
+		CommonFunctions comm = new CommonFunctions(Paths.get("C:/temp/Standards"), null);
 		/*
 		new FetchHtml("https://webstore.iec.ch/publication/2606", "IEC 60601-1 2005")
 		.select("span")

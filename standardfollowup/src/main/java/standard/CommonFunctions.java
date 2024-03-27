@@ -40,7 +40,7 @@ public class CommonFunctions {
 	
 	public enum DownloadDir {CONTENT, SUMMARY, HTML}
 	public enum DocumentEvent {NEW, CHANGED, REVOKED, NOT_FOUND}
-	public static final SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
+	public static final SimpleDateFormat dateAndTimeFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
 	
 	private static CommonFunctions INSTANCE;
 	private static final String PROTOCOLL_TXT = "%s/protocoll-%s.txt";
@@ -72,10 +72,14 @@ public class CommonFunctions {
 		return INSTANCE;
 	}
 	
-	public CommonFunctions(Path baseDir) throws IOException {
+	public CommonFunctions(Path baseDir, LocalDate lastCheckDate) throws IOException {
 		this.baseDirPath = baseDir.resolve("PublicHealth");
-		dateOfLastCheck = readLastJournalDate();
-		checkingDate = df.format(new Date());
+		if (lastCheckDate == null) {
+			dateOfLastCheck = readLastJournalDate();
+		} else {
+			dateOfLastCheck = lastCheckDate;
+		}
+		checkingDate = dateAndTimeFormat.format(new Date());
 		if (!Files.isDirectory(baseDirPath)) {
 			System.out.println("Not correct directory: " + baseDirPath.toString());
 			throw new FileNotFoundException(baseDirPath.toString());

@@ -7,6 +7,11 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.ParseException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -56,6 +61,10 @@ public class RegulatioryChanges implements Callable<Integer> {
 	@Option(names = { "-t", "--test" }, description = "Which test shoult run", defaultValue="0123456789ABCDEF")
 	String testCase;
 
+	@Option(names = { "-l", "--lastcheck" }, description = "Date of last check as yyyymmdd")
+	String dateOfLastCheckString;
+
+	
 	/**
 	 * @param Directory of collected documents or c:\temp\Standards if absent
 	 */
@@ -75,8 +84,18 @@ public class RegulatioryChanges implements Callable<Integer> {
 	}
 
 	private void doIt() throws IOException, URISyntaxException {
-		common = new CommonFunctions(baseDir);
-		common.appendJournal("Seek for changes at : " + CommonFunctions.df.format(new Date()) + System.lineSeparator());
+		LocalDate dateOfLastCheck = null;
+		if (dateOfLastCheckString != null) {
+			try {
+				dateOfLastCheck = LocalDate.parse(dateOfLastCheckString, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+			} catch (DateTimeParseException e) {
+				System.out.println("Wrong last check date format, yuse yyyy-mm-dd");
+				return;
+			}
+		}
+
+		common = new CommonFunctions(baseDir, dateOfLastCheck);
+		common.appendJournal("Seek for changes at : " + CommonFunctions.dateAndTimeFormat.format(new Date()) + System.lineSeparator());
 		if (oldDirArg == null) {
 			oldDir = common.getLastDir();
 		} else {
@@ -91,7 +110,7 @@ public class RegulatioryChanges implements Callable<Integer> {
 			System.out.println("Not correct directory: " + newDirArg);
 			throw new FileNotFoundException(oldDirArg);
 		}
-
+		
 		common.createNewDir(newDirArg);
 		if (newDirArg == null) {
 			collect();
