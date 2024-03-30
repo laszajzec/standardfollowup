@@ -1,5 +1,6 @@
 package standard.ec.publichealth;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -20,6 +21,8 @@ public class ReadPublicHealth implements RegulatorySource {
 	private static final String prefix = "https://health.ec.europa.eu";
 
 	private CommonFunctions common;
+	private List<File> files = new ArrayList<>();
+	private boolean ok = true;
 
 	List<String> ignore = Arrays.asList(new String[] {"#main-content", "#MainContent", "https://commission.europa.eu/index_\\w\\w", 
 			"https://health.ec.europa.eu/medical-devices-sector/new-regulations/guidance-mdcg-endorsed-documents-and-other-guidance_.*",
@@ -48,10 +51,10 @@ public class ReadPublicHealth implements RegulatorySource {
 	}
 
 	@Override
-	public void evaluate() {
-		// TODO Auto-generated method stub
-		
+	public void evaluate() throws IOException {
+		ok = common.checkFiles(files.toArray(new File[0]), blogUrl);
 	}
+
 	private void recurseLink(Document doc) throws IOException, URISyntaxException {
 		List<String> fileRefs = new ArrayList<>();
 		List<String> uriRefs = new ArrayList<>();
@@ -72,11 +75,15 @@ public class ReadPublicHealth implements RegulatorySource {
 	}
 	
 	private void downloadFiles(List<String> fileRefs) throws IOException, URISyntaxException {
-//		common.createSubdirectory("pubhealth");
 		for (String fileRef : fileRefs) {
 			String corrected = fileRef.startsWith("http") ? fileRef : prefix + fileRef;
-			common.downloadFileToSub(corrected, CommonFunctions.DownloadDir.CONTENT, "pubhealth");
+			files.add(common.downloadFileToSub(corrected, CommonFunctions.DownloadDir.CONTENT, "pubhealth"));
 		}
+	}
+
+	@Override
+	public boolean isOk() {
+		return ok;
 	}
 
 }

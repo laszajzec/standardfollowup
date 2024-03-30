@@ -7,10 +7,13 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -43,7 +46,7 @@ public class CommonFunctions {
 	public static final SimpleDateFormat dateAndTimeFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
 	
 	private static CommonFunctions INSTANCE;
-	private static final String PROTOCOLL_TXT = "%s/protocoll-%s.txt";
+	private static final String PROTOCOLL_TXT = "%s/protocol-%s.txt";
 	private static final String JOURNAL_TXT = "journal.txt";
 	private static final String COMPARATOR_CMD = "compare.cmd";
 	private static final String DOWNLOAD_CONTENT_DIR = "files";
@@ -135,51 +138,52 @@ public class CommonFunctions {
 		}
 	}
 
-	public void compareDirectories(Path oldFilesDir, Path newFilesDir) throws IOException {
+	public boolean compareDirectories(Path oldFilesDir, Path newFilesDir) throws IOException {
 
-		List<String> newFiles = Arrays.asList(newFilesDir.toFile().listFiles()).stream().map(x -> x.getName()).collect(Collectors.toList());
-		List<String> oldFiles = Arrays.asList(oldFilesDir.toFile().listFiles()).stream().map(x -> x.getName()).collect(Collectors.toList());
+//		List<String> newFiles = Arrays.asList(newFilesDir.toFile().listFiles()).stream().map(x -> x.getName()).collect(Collectors.toList());
+//		List<String> oldFiles = Arrays.asList(oldFilesDir.toFile().listFiles()).stream().map(x -> x.getName()).collect(Collectors.toList());
+		
+		List<String> newFiles = Files.walk(newFilesDir).map(x -> x.toFile().getName()).collect(Collectors.toList());
+		List<String> oldFiles = Files.walk(oldFilesDir).map(x -> x.toFile().getName()).collect(Collectors.toList());
+		
+		boolean ok = true;
 		if (newFiles.isEmpty()) {
 			System.out.println("No files are downloded!");
-			return;
+			return ok;
 		}
-		Set<String> createdSince = new TreeSet<>(newFiles);
-		createdSince.removeAll(oldFiles);
-		Set<String> droppedSince = new TreeSet<>(oldFiles);
-		droppedSince.removeAll(newFiles);
-		droppedSince.remove(CommonFunctions.getProtocollTxt());
+		Set<String> addedNewDocuments = new TreeSet<>(newFiles);
+		addedNewDocuments.removeAll(oldFiles);
+		Set<String> droppedDocuments = new TreeSet<>(oldFiles);
+		droppedDocuments.removeAll(newFiles);
+		droppedDocuments.remove(CommonFunctions.getProtocollTxt());
 		Collection<String> keptSince = CollectionUtils.intersection(newFiles, oldFiles);
 		List<String> differentFiles = new ArrayList<>();
-		try (BufferedWriter logger =  Files.newBufferedWriter(newFilesDir.resolve(CommonFunctions.getProtocollTxt()))) {
-			try (BufferedWriter comparator =  Files.newBufferedWriter(newFilesDir.resolve(CommonFunctions.getComparatorCmd()))) {
-				comparator.append("@set comparator=\"c:\\Program Files\\PDF24\\pdf24-Toolbox.exe\" verb=compare ");
-				comparator.newLine();
-				for (String keptFile : keptSince) {
-					Path oldFilePath = oldFilesDir.resolve(keptFile);
-					File oldFile = oldFilePath.toFile();
-					File newFile = newFilesDir.resolve(keptFile).toFile();
-					if (areFilesIdentical(oldFile, newFile)) {
-//						if (oldDirArg == null && newDirArg == null) {
-//							Files.delete(oldFilePath);
-//						}
-					} else {
-						differentFiles.add(keptFile);
-						logger.append("cmp ");
-						logger.append(oldFile.toString());
-						logger.append(" ");
-						logger.append(newFile.toString());
-						comparator.append(String.format("%%comparator%% \"%s\" \"%s\"%n", oldFile.toString(), newFile.toString()));
-						comparator.append("pause");
-						comparator.newLine();
-					}
+		try (BufferedWriter comparator =  Files.newBufferedWriter(newFilesDir.resolve(CommonFunctions.getComparatorCmd()))) {
+			comparator.append("@set comparator=\"c:\\Program Files\\PDF24\\pdf24-Toolbox.exe\" verb=compare ");
+			comparator.newLine();
+			for (String keptFile : keptSince) {
+				Path oldFilePath = oldFilesDir.resolve(keptFile);
+				File oldFile = oldFilePath.toFile();
+				File newFile = newFilesDir.resolve(keptFile).toFile();
+				if (!areFilesIdentical(oldFile, newFile)) {
+					differentFiles.add(keptFile);
+					appendProtocol("cmp ");
+					appendProtocol(oldFile.toString());
+					appendProtocol(" ");
+					appendProtocolLn(newFile.toString());
+					comparator.append(String.format("%%comparator%% \"%s\" \"%s\"%n", oldFile.toString(), newFile.toString()));
+					comparator.append("pause");
+					comparator.newLine();
+					ok = false;
 				}
-				logger.append(String.format("REM Comparing %s with %s%n", newFilesDir, oldFilesDir));
-				printList(droppedSince, "Dropped", "No standard dropped!");
-				printList(createdSince, "New standard", "No new standard!");
-				printList(differentFiles, "Changed", "No changes!");
 			}
+//			logger.append(String.format("REM Comparing %s with %s%n", newFilesDir, oldFilesDir));
+			printList(droppedDocuments, "Dropped", "No standard dropped!");
+			printList(addedNewDocuments, "New standard", "No new standard!");
+			printList(differentFiles, "Changed", "No changes!");
 		}
-//		System.out.format("Compared %s with %s%n", newFilesDir, oldFilesDir);
+		//		System.out.format("Compared %s with %s%n", newFilesDir, oldFilesDir);
+		return ok;
 	}
 
 	private void printList(Collection<String> listOfFiles, String prefix, String emptyText) throws IOException {
@@ -195,7 +199,11 @@ public class CommonFunctions {
 	public Path getOldEquivalent(File aFile) {
 		return Paths.get(aFile.toString().replace(newDirName, oldDirName));
 	}
-	
+
+	public Path getOldEquivalent(Path aFile) {
+		return Paths.get(aFile.toString().replace(newDirName, oldDirName));
+	}
+
 	private String getFileName(String uriString) throws URISyntaxException {
 		return getFileName(new URI(uriString));
 	}
@@ -386,23 +394,6 @@ public class CommonFunctions {
 		}
 	}
 	
-	/*
-	private String[] getPdfContentOld(Path inFilePath) throws FileNotFoundException, IOException {
-		PDFTextStripper pdfStripper = null;
-		PDDocument pdDoc = null;
-		COSDocument cosDoc = null;
-		File pdfFile = inFilePath.toFile();
-		PDFParser parser = new PDFParser(new RandomAccessReadBufferedFile(pdfFile.toString()));
-		parser.parse();
-		cosDoc = parser.getDocument();
-		pdfStripper = new PDFTextStripper();
-		pdDoc = new PDDocument(cosDoc);
-		String parsedText = pdfStripper.getText(pdDoc);
-		pdDoc.close();
-		return parsedText.split(pdfStripper.getLineSeparator());
-	}
-	*/
-
 	public boolean checkWithId(WebDriver driver, String id, String value) {
 		List<WebElement> elementsWithId = driver.findElements(By.id(id));
 		if (elementsWithId.size() != 1) return false;
@@ -442,4 +433,40 @@ public class CommonFunctions {
 		return false;
 	}
 
+	public boolean checkFiles(File[] files, String uri) throws IOException {
+		boolean ok = true;
+		for (File newFile : files) {
+			Path oldFile = getOldEquivalent(newFile);
+			if (Files.exists(oldFile)) {
+				if (!areFilesIdentical(newFile, oldFile.toFile())) {
+					CommonFunctions.get().appendProtocol(CommonFunctions.DocumentEvent.CHANGED, newFile.getName(), uri, null);
+					ok = false;
+				}
+			} else {
+				CommonFunctions.get().appendProtocol(CommonFunctions.DocumentEvent.NEW, newFile.getName(), uri, null);
+				ok = false;
+			}
+		}
+		return ok;
+	}
+
+	public void reduceOldDir() throws IOException {
+		Files.walkFileTree(newFilesDir, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            	Path oldFile = getOldEquivalent(file);
+            	if (oldFile != null && areFilesIdentical(file.toFile(), oldFile.toFile())) {
+            		Files.delete(oldFile);
+            	}
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                System.err.println(file + "\terror: " + exc);
+                return FileVisitResult.CONTINUE;
+            }
+		});
+	}
+	
 }

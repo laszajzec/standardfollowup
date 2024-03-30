@@ -33,6 +33,7 @@ public class ReadISO implements RegulatorySource {
 	private List<Deviation> changedStandards = new ArrayList<>();
 	private List<Deviation> withdrawnedStandards = new ArrayList<>();
 	private List<Path> fileList;
+	private boolean ok = true;
 	
 	public ReadISO() {
 		common = CommonFunctions.get();
@@ -209,6 +210,7 @@ public class ReadISO implements RegulatorySource {
 	private void writeToProtocol(List<Deviation> numbers, DocumentEvent reason) {
 		for (Deviation dev : numbers) {
 			common.appendProtocol(reason, dev.getIsoNumber(), dev.getDocumentName(), null);
+			ok = false;
 		}
 	}
 	
@@ -243,5 +245,9 @@ public class ReadISO implements RegulatorySource {
 		public String getDocumentName() {
 			return inDocument.getFileName().toString();
 		}
+	}
+
+	public boolean isOk() {
+		return ok;
 	};
 }

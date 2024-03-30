@@ -7,6 +7,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 public class FetchHtml {
 	
@@ -85,6 +86,45 @@ public class FetchHtml {
 		return this;
 	}
 
+	public FetchHtml checkTag(String tag, String value) {
+		if (resultOK) {
+			boolean success = false;
+			for (int i = 0; i < selectedElements.size(); i++) {
+				Element e = selectedElements.get(i);
+				if (e.attr(tag).equals(value)) {
+					success = true;
+					break;
+				}
+			}
+			resultOK = success;
+		}
+		return this;
+	}
+
+	public FetchHtml checkXPathTag(String xPath, String tag, String value) {
+		if (resultOK) {
+			Elements es = doc.selectXpath(xPath);
+			if (es.size() == 1) {
+				Element e = es.getFirst();
+				String referredValue = (tag == null || tag.isEmpty()) ? e.text() : e.attr(tag);
+				resultOK = referredValue.equals(value);
+			}
+		}
+		return this;
+	}
+
+	public FetchHtml checkXPathCond(String xPath, Predicate<Element> cond) {
+		if (resultOK) {
+			Elements es = doc.selectXpath(xPath);
+			if (es.size() == 1) {
+				Element e = es.getFirst();
+				resultOK = cond.test(e);
+			}
+		}
+		return this;
+	}
+
+	
 	public boolean select(Predicate<org.jsoup.nodes.Element> select, BiFunction<Integer, org.jsoup.nodes.Element, Boolean> transform) {
 		Stream<Boolean> selected = selectedElements.stream()
 				.filter(x -> select.test(x))

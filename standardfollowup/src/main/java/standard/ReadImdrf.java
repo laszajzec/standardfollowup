@@ -13,13 +13,17 @@ import org.jsoup.nodes.Element;
 
 import standard.CommonFunctions.DownloadDir;
 
-public class ReadImdrf {
+public class ReadImdrf implements RegulatorySource {
 	
 	private List<String> references = new ArrayList<>();
 	private CommonFunctions common;
+	private boolean ok = true;
 
-	public void collect() {
+	public ReadImdrf() {
 		common = CommonFunctions.get();
+	}
+	
+	public void collect() {
 		try {
 			collectLinks();
 			checkDocuments(references);
@@ -30,13 +34,13 @@ public class ReadImdrf {
 
 
 	public void evaluate() throws IOException {
-		common.getDestination(DownloadDir.CONTENT, "imdrf");
-		common.compareDirectories(common.getNewFilesDir(), common.getLastDir());
+		Path newFilesDir1 = common.getDestination(DownloadDir.CONTENT, "imdrf");
+		Path oldFilesDir1 = common.getOldEquivalent(newFilesDir1);
+		ok = common.compareDirectories(oldFilesDir1, newFilesDir1);
 
-		Path oldFilesDir = common.getLastDir();
-		Path newFilesDir = common.getNewFilesDir();
-		common.compareDirectories(oldFilesDir, newFilesDir);
-		//TODO not finished yet
+//		Path oldFilesDir = common.getLastDir();
+//		Path newFilesDir = common.getNewFilesDir();
+//		ok = common.compareDirectories(oldFilesDir, newFilesDir);
 	}
 	
 	private void collectLinks() throws IOException, URISyntaxException {
@@ -58,11 +62,12 @@ public class ReadImdrf {
 			String linkAttr = e.attr("href");
 			if (!linkAttr.isEmpty()) {
 				if (aFilter.test(linkAttr)) {
-					System.out.println("Accepted " + linkAttr);
+//					System.out.println("Accepted " + linkAttr);
 					uriRefs.add(linkAttr);
 				} else {
 					if (linkAttr.contains(".")) {
-						System.out.println("Rejected " + linkAttr);
+						// ignore
+//						System.out.println("Rejected " + linkAttr);
 					}
 				}
 			}
@@ -91,6 +96,17 @@ public class ReadImdrf {
 			common.downloadFileToSub(fileRef, DownloadDir.CONTENT, "imdrf");
 		}
 		
+	}
+
+
+	@Override
+	public void removeUnchanged() throws Exception {
+	}
+
+
+	@Override
+	public boolean isOk() {
+		return ok;
 	}
 
 }
