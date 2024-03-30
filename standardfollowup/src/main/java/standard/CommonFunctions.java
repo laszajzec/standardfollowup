@@ -38,6 +38,8 @@ import org.jsoup.nodes.Document;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 
 public class CommonFunctions {
 	
@@ -467,6 +469,14 @@ public class CommonFunctions {
                 return FileVisitResult.CONTINUE;
             }
 		});
+	}
+	
+	public WebDriver startChrome(String uri) {
+		ChromeOptions option = new ChromeOptions();
+		option.addArguments("silent-launch");
+		WebDriver driver = new ChromeDriver(option);
+		driver.get(uri);
+		return driver;
 	}
 	
 }

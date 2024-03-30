@@ -27,7 +27,6 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.support.ui.FluentWait;
 import org.openqa.selenium.support.ui.Wait;
 
@@ -134,25 +133,6 @@ public class RegulatioryChanges implements Callable<Integer> {
 	}
 
 	private void collect() throws IOException, URISyntaxException {
-		/*
-		if (testCase.contains("0")) loadISO.get();
-		if (testCase.contains("1")) loadIEC.get();
-		if (testCase.contains("2")) loadEST.get();
-		if (testCase.contains("3")) loadDin.get();
-		if (testCase.contains("4")) loadEulex.get();        // + https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:32017R0745
-		if (testCase.contains("5")) loadDE_MedProodGesetz.get();
-		if (testCase.contains("6")) loadUS_FedReg.get();
-		if (testCase.contains("7")) loadBrHealth.get();
-		if (testCase.contains("8")) loadCaHealth.get();     // + https://www.fda.gov/medical-devices/medical-device-single-audit-program-mdsap/mdsap-audit-procedures-and-forms
-		if (testCase.contains("9")) loadAuHeath.get();      // + https://www.tga.gov.au/
-		if (testCase.contains("A")) loadJpHealth.get();     // + https://www.pmda.go.jp/english/review-services/regulatory-info/0004.html
-		if (testCase.contains("B")) loadChHealth.get();     // + https://www.fedlex.admin.ch/de/home?news_period=last_day&news_pageNb=1&news_order=desc&news_itemsPerPage=10
-		if (testCase.contains("C")) loadImdrf.get();        // + https://www.imdrf.org/documents
-		if (testCase.contains("D")) loadUkLex.get();        //   https://www.gov.uk/government/collections/regulatory-guidance-for-medical-devices
-		if (testCase.contains("E")) loadEuHealth.get();    // + https://health.ec.europa.eu/medical-devices-sector/new-regulations/guidance-mdcg-endorsed-documents-and-other-guidance_en
-		if (testCase.contains("F")) loadHealthcare.get();   // - https://health.ec.europa.eu/medical-devices-sector/new-regulations/guidance-mdcg-endorsed-documents-and-other-guidance_en
-		*/
-		
 		check('0', loadISO);
 		check('1', loadIEC);
 		check('2', loadEST);
@@ -429,17 +409,16 @@ public class RegulatioryChanges implements Callable<Integer> {
 		 * MepV SR 812.213
 		 */
 		String uri = "https://www.fedlex.admin.ch/eli/cc/2020/552/de";
-		WebDriver driver = new ChromeDriver(); 
-		driver.get(uri);
-		 Wait<WebDriver> wait = new FluentWait<WebDriver>(driver)
-		            .withTimeout(Duration.ofSeconds(10))
-		            .pollingEvery(Duration.ofSeconds(1))
-		            .ignoring(NoSuchElementException.class);
-		 WebElement e = wait.until(new Function<WebDriver, WebElement>() {
-		        public WebElement apply(WebDriver driver) {
-		            return driver.findElement(By.xpath("//*[@id=\"preface\"]/p[2]"));
-		        }
-		    });
+		WebDriver driver = common.startChrome(uri); 
+		Wait<WebDriver> wait = new FluentWait<WebDriver>(driver)
+				.withTimeout(Duration.ofSeconds(10))
+				.pollingEvery(Duration.ofSeconds(1))
+				.ignoring(NoSuchElementException.class);
+		WebElement e = wait.until(new Function<WebDriver, WebElement>() {
+			public WebElement apply(WebDriver driver) {
+				return driver.findElement(By.xpath("//*[@id=\"preface\"]/p[2]"));
+			}
+		});
 		boolean ok = e.getText().equals("vom 1. Juli 2020 (Stand am 1. November 2023)");
 		if (!ok) {
 			common.appendProtocol(CommonFunctions.DocumentEvent.CHANGED, "MepV SR 812.213", uri, null);
@@ -508,8 +487,7 @@ public class RegulatioryChanges implements Callable<Integer> {
 		 * MDSAP AU P0002.008
 		 */
 		String uri = "https://laws-lois.justice.gc.ca/eng/regulations/sor-98-282/";
-		WebDriver driver = new ChromeDriver(); 
-		driver.get(uri);
+		WebDriver driver = common.startChrome(uri); 
 		WebElement SOR98_282 = driver.findElement(By.xpath("//*[@id='assentedDate']"));
 		boolean ok1 = SOR98_282.getText().contains("Regulations are current to 2024-02-20");
 		boolean ok2 = SOR98_282.getText().contains("on 2024-01-03");
@@ -523,7 +501,7 @@ public class RegulatioryChanges implements Callable<Integer> {
 		if (!ok3 || !ok4) {
 			common.appendProtocol(CommonFunctions.DocumentEvent.CHANGED, "SOR/2020-262", uri, "Ammendment");
 		}
-		driver.close();
+		driver.quit();
 		return ok1 & ok2 & ok3 & ok4;
 	};
 
