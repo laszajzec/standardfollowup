@@ -34,9 +34,11 @@ public class ReadISO implements RegulatorySource {
 	private List<Deviation> withdrawnedStandards = new ArrayList<>();
 	private List<Path> fileList;
 	private boolean ok = true;
+	private List<String> isoNumbers;
 	
 	public ReadISO() {
 		common = CommonFunctions.get();
+		isoNumbers = common.getIsoStandards();
 	}
 	
 	@Override
@@ -194,7 +196,7 @@ public class ReadISO implements RegulatorySource {
 	private boolean canBeIsoNr(String line) {
 		int posOfColon = line.indexOf(":");
 		String nr = (posOfColon >= 0) ? line.substring(0, posOfColon) : line;
-		boolean isRelevant = common.getIsoStandards().contains(nr);
+		boolean isRelevant = isoNumbers.contains(nr);
 		System.out.println((isRelevant ? " + " : "   ") + nr);
 		return isRelevant;
 	}
@@ -245,6 +247,10 @@ public class ReadISO implements RegulatorySource {
 		public String getDocumentName() {
 			return inDocument.getFileName().toString();
 		}
+	}
+
+	public void setIsoNumbers(List<String> isoNumbers) {
+		this.isoNumbers = isoNumbers;
 	}
 
 	public boolean isOk() {

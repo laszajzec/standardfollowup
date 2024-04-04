@@ -1,0 +1,365 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!DOCTYPE regulatories [
+	<!ELEMENT regulatories (regulatory+)>
+	<!ELEMENT regulatory (iso-reference | imdrf-reference | eu-health | html-reference | file-reference | selenium-reference)+ >
+	<!ATTLIST regulatory 
+		name ID #REQUIRED
+		testid CDATA #REQUIRED>
+
+	<!ELEMENT iso-reference (num)+>
+	<!ELEMENT num (#PCDATA)>
+	
+	<!ELEMENT imdrf-reference EMPTY>
+	<!ELEMENT html-reference (uriref)+>
+
+	<!ELEMENT eu-health EMPTY>
+
+	<!ELEMENT uriref (select-tag | hpathequals | hpathcontains )+>
+	<!ATTLIST uriref 
+		uri CDATA #REQUIRED
+		filename CDATA #REQUIRED>
+
+	<!ELEMENT select-tag (hexists | hequals | hcontains )+>
+	<!ATTLIST select-tag 
+		tagname CDATA #IMPLIED
+		what CDATA #IMPLIED>
+	<!ELEMENT hexists (#PCDATA)>
+	<!ATTLIST hexists 
+		value CDATA #REQUIRED
+		what CDATA #IMPLIED>
+	<!ELEMENT hequals (#PCDATA)>
+	<!ATTLIST hequals
+		path CDATA #REQUIRED
+		attr CDATA #IMPLIED
+		value CDATA #REQUIRED
+		what CDATA #IMPLIED>
+	<!ELEMENT hcontains (#PCDATA)>
+	<!ATTLIST hcontains
+		path CDATA #REQUIRED
+		attr CDATA #IMPLIED
+		value CDATA #REQUIRED
+		what CDATA #IMPLIED>
+	<!ELEMENT hpathequals EMPTY>
+	<!ATTLIST hpathequals
+		path CDATA #REQUIRED
+		attr CDATA #IMPLIED
+		value CDATA #REQUIRED
+		what CDATA #IMPLIED>
+	<!ELEMENT hpathcontains EMPTY>
+	<!ATTLIST hpathcontains
+		path CDATA #REQUIRED
+		attr CDATA #IMPLIED
+		value CDATA #REQUIRED
+		what CDATA #IMPLIED>
+
+	<!ELEMENT file-reference EMPTY>
+	<!ATTLIST file-reference 
+		uri CDATA #REQUIRED
+		filename CDATA #REQUIRED>
+
+	<!ELEMENT selenium-reference (webelement)+>
+	<!ATTLIST selenium-reference 
+		uri CDATA #REQUIRED
+		filename CDATA #REQUIRED>
+
+	<!ELEMENT webelement (sequals | scontains)*>
+	<!ATTLIST webelement path CDATA #REQUIRED>
+
+	<!ELEMENT sequals EMPTY>
+	<!ATTLIST sequals 
+		value CDATA #REQUIRED
+		attr CDATA #IMPLIED
+		what CDATA #IMPLIED>
+	
+	<!ELEMENT scontains EMPTY>
+	<!ATTLIST scontains 
+		value CDATA #REQUIRED
+		attr CDATA #IMPLIED
+		what CDATA #IMPLIED>
+]>
+
+<regulatories>
+	<regulatory name="ISO" testid="0">
+		<iso-reference>
+			<num>10342</num> <num>10343</num> <num>10938</num> <num>10993-18</num> <num>10993-1</num>
+			<num>10993-5</num> <num>10993-7</num> <num>11135</num> <num>11137-1</num> <num>11607-1</num>
+			<num>11607-2</num> <num>11737-1</num> <num>12866</num> <num>12867</num> <num>13485</num>
+			<num>14971</num> <num>15004-1</num> <num>15223-1</num> <num>15223-2</num> <num>17664-1</num>
+			<num>17664-2</num> <num>19011</num> <num>19980</num> 
+			<num>20417</num> <num>22665</num>
+			<num>4180</num>
+			<num>8429</num> <num>8596</num> <num>8612</num>
+			<num>9022-3</num> <num>9801</num>
+		</iso-reference>
+	</regulatory>
+
+	<regulatory name="IEC" testid="1">
+		<html-reference>
+			<uriref uri="https://webstore.iec.ch/publication/67497" filename="IEC 60601-1 2005 AMD1 2012 AMD2 2020">
+				<select-tag tagname="span">
+					<hexists value="2020-08-20" what="issue date"/>
+					<hexists value="3.2" what="version"/>
+					<hexists value="2028" what="review year"/>
+				</select-tag>
+			</uriref>
+			<uriref uri="https://webstore.iec.ch/publication/67554" filename="IEC 60601-1-2 2014 AMD1 2020">
+				<select-tag tagname="span">
+					<hexists value="2020-09-01" what="issue date"/>
+					<hexists value="4.1" what="version"/>
+					<hexists value="2028" what="review year"/>
+				</select-tag>
+			</uriref>
+			<uriref uri="https://webstore.iec.ch/publication/67381" filename="IEC 60601-1-6 2010 AMD1 2013 AMD2 2020">
+				<select-tag tagname="span">
+					<hexists value="2020-07-22" what="issue date"/>
+					<hexists value="3.2" what="version"/>
+					<hexists value="2028" what="review year"/>
+				</select-tag>
+			</uriref>
+			<uriref uri="https://webstore.iec.ch/publication/67382" filename="IEC 60601-1-9 2007 AMD1 2013 AMD2 2020">
+				<select-tag tagname="span">
+					<hexists value="2020-07-22" what="issue date"/>
+					<hexists value="1.2" what="version"/>
+					<hexists value="2028" what="review year"/>
+				</select-tag>
+			</uriref>
+			<uriref uri="https://webstore.iec.ch/publication/3587" filename="IEC 60825-1 2014">
+				<select-tag tagname="span">
+					<hexists value="2014-05-15" what="issue date"/>
+					<hexists value="3.0" what="version"/>
+					<hexists value="2025" what="review year"/>
+				</select-tag>
+			</uriref>
+			<uriref uri="https://webstore.iec.ch/publication/6792" filename="IEC 62304 2006">
+				<select-tag tagname="span">
+					<hexists value="2006-05-09" what="issue date"/>
+					<hexists value="1.0" what="version"/>
+					<hexists value="2026" what="review year"/>
+				</select-tag>
+			</uriref>
+			<uriref uri="https://webstore.iec.ch/publication/67220" filename="IEC 62366-1 2015 AMD1 2020">
+				<select-tag tagname="span">
+					<hexists value="2020-06-17" what="issue date"/>
+					<hexists value="1,1" what="version"/>
+					<hexists value="2026" what="review year"/>
+				</select-tag>
+			</uriref>
+			<uriref uri="https://webstore.iec.ch/publication/24664" filename="IEC TR 62366-2 2016">
+				<select-tag tagname="span">
+					<hexists value="2016-04-27" what="issue date"/>
+					<hexists value="1.0" what="version"/>
+					<hexists value="2026" what="review year"/>
+				</select-tag>
+			</uriref>
+			<uriref uri="https://webstore.iec.ch/publication/7076" filename="IEC 62471 2006">
+				<select-tag tagname="span">
+					<hexists value="2006-07-26" what="issue date"/>
+					<hexists value="1,0" what="version"/>
+					<hexists value="2024" what="review year"/>
+				</select-tag>
+			</uriref>
+		</html-reference>
+	</regulatory>
+	
+	<regulatory name="EST" testid="2">
+		<html-reference>
+			<uriref uri="https://www.evs.ee/en/evs-en-556-1-2002" filename="EN 556-1">
+				<select-tag tagname="div">
+					<hexists value="EVS-EN 556-1:2002" what="doc id"/>
+					<hexists value="Valid from 06.05.2002" what="valid from"/>
+				</select-tag>
+				<hpathequals path="//*[@id=&quot;product-details-form&quot;]/div[1]/div[2]/div[7]/div/div/div[2]/div[2]/div[1]/div/i" attr="class" value="fas fa-check-circle green" what="validity"/>
+			</uriref>
+			<uriref uri="https://www.evs.ee/en/evs-en-iso-15004-2-2007" filename="EN ISO 15004-2">
+				<select-tag tagname="div">
+					<hexists value="EVS-EN ISO 15004-2:2007" what="doc id"/>
+					<hexists value="Valid from 05.04.2007" what="valid from"/>
+				</select-tag>
+				<hpathequals path="//*[@id=&quot;product-details-form&quot;]/div[1]/div[2]/div[7]/div/div/div[2]/div[2]/div[1]/div/i" attr="class" value="fas fa-check-circle green" what="validity"/>
+			</uriref>
+			<uriref uri="https://www.evs.ee/en/evs-en-22248-2003" filename="EN 22248">
+				<select-tag tagname="div">
+					<hexists value="EVS-EN 22248:2003" what="doc id"/>
+					<hexists value="Valid from 01.09.2003" what="valid from"/>
+				</select-tag>
+				<hpathequals path="//*[@id=&quot;product-details-form&quot;]/div[1]/div[2]/div[7]/div/div/div[2]/div[2]/div[1]/div/i" attr="class" value="fas fa-check-circle green" what="validity"/>
+			</uriref>
+		</html-reference>
+	</regulatory>
+
+	<regulatory name="DIN" testid="3">
+		<html-reference>
+			<uriref uri="https://www.din.de/de/mitwirken/normenausschuesse/nafuo/veroeffentlichungen/wdc-beuth:din21:332097693" filename="DIN 58220-3.html">
+				<hpathequals path="/html/body/div[4]/main/div[5]/div/div[1]/div[2]/div[1]/div[1]/span[2]" attr="" value="2021-04" what="valid from"/>
+				<hpathequals path="/html/body/div[4]/main/div[4]/div/div/div/span/span" attr="" value="[AKTUELL]" what="actuell"/>
+			</uriref>
+		</html-reference>
+	</regulatory>
+
+	<regulatory name="EULEX" testid="4">
+		<html-reference>
+			<uriref uri="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32011L0065" filename="EU Directive Electronic Equipment.html">
+				<hpathcontains path="//*[@id=&quot;title&quot;]/text()" value="Directive 2011/65/EU" what="directive number" />
+				<hpathcontains path="//*[@id=&quot;PP1Contents&quot;]/div/p[5]/a" value="01/02/2024" what="valid date" />
+			</uriref>
+
+			<uriref uri="https://eur-lex.europa.eu/legal-content/en/ALL/?uri=CELEX%3A32006R1907" filename="EU Regulation No 1907-2006.html">
+				<hpathcontains path="//*[@id=&quot;title&quot;]/text()" value="1907/2006" what="directive number"/>
+				<hpathcontains path="//*[@id=&quot;PP1Contents&quot;]/div/p[5]/a" value="01/12/2023" what="valid date" />
+			</uriref>
+
+			<uriref uri="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32017R0745" filename="EU Medizinprodukte.html">
+				<hpathcontains path="//*[@id=&quot;title&quot;]/text()" value="2017/745" what="directive number" />
+				<hpathcontains path="//*[@id=&quot;PP1Contents&quot;]/div/p[5]/a" value="20/03/2023" what="valid date" />
+			</uriref>
+
+			<uriref uri="https://eur-lex.europa.eu/legal-content/DE/TXT/?uri=CELEX:32021R2078" filename="EU Medical Device Nomenclature.html">
+				<hpathcontains path="//*[@id=&quot;title&quot;]/text()" value="2021/2078" what="directive number" />
+				<hpathcontains path="//*[@id=&quot;PP1Contents&quot;]/div/p[5]/a" value="green-on" what="valid date" />
+			</uriref>
+		</html-reference>
+	</regulatory>
+
+	<regulatory name="DE" testid="5">
+		<file-reference uri="https://www.bundesgesundheitsministerium.de/fileadmin/Dateien/3_Downloads/Gesetze_und_Verordnungen/GuV/R/Referentenentwurf_RISG.pdf" filename="MPEUAnpG.pdf"/>
+		<file-reference uri="https://www.bundesgesundheitsministerium.de/fileadmin/Dateien/3_Downloads/Gesetze_und_Verordnungen/GuV/M/RefE_MPEUAnpV.pdf" filename="MPEUAnpV.pdf"/>
+		<html-reference>
+			<uriref uri="https://dip.bundestag.de/vorgang/.../255346" filename="MPEUAnpG.html">
+				<hpathequals path="//*[@id=&quot;content-übersicht&quot;]/div/div[1]/ul[1]/li[5]/span/ul/li/text()[1]" value="26.05.2020" what="valid from" />
+			</uriref>
+			<uriref uri="https://www.bundesgesundheitsministerium.de/service/gesetze-und-verordnungen/detail/medizinprodukte-eu-anpassungsverordnung-mpeuanpv.html" filename="MPEUAnpV.html">
+				<hpathequals path="//*[@id=&quot;article&quot;]/div[2]/div/div/div/div/div/span[2]" value="26.05.2021" what="valid from" />
+			</uriref>
+			<uriref uri="https://www.bundesgesundheitsministerium.de/service/gesetze-und-verordnungen/detail/verordnung-zur-abgabe-von-medizinprodukten-und-zur-aenderung-medizinprodukterechtlicher-vorschriften.html" filename="MPDG.html">
+				<hpathequals path="//*[@id=&quot;article&quot;]/div[2]/div/div/div/div/div/span[2]" value="25.07.2014" what="valid from" />
+			</uriref>
+		</html-reference>
+	</regulatory>
+
+	<regulatory name="US" testid="6">
+		<file-reference uri="https://www.ecfr.gov/api/versioner/v1/full/2024-03-26/title-21.xml?part=803" filename="FDA 21 CFR part 803.xml"/>
+		<file-reference uri="https://www.govinfo.gov/link/cfr/21/803?link-type=pdf&amp;year=mostrecent" filename="FDA 21 CFR part 803.pdf"/>
+		<file-reference uri="https://www.govinfo.gov/link/cfr/21/806?link-type=pdf&amp;year=mostrecent" filename="FDA 21 CFR part 806.pdf"/>
+		<file-reference uri="https://www.govinfo.gov/link/cfr/21/807?link-type=pdf&amp;year=mostrecent" filename="FDA 21 CFR part 807.pdf"/>
+		<file-reference uri="https://www.govinfo.gov/link/cfr/21/820?link-type=pdf&amp;year=mostrecent" filename="FDA 21 CFR part 820.pdf"/>
+		<file-reference uri="https://www.govinfo.gov/link/cfr/21/830?link-type=pdf&amp;year=mostrecent" filename="FDA 21 CFR part 830.pdf"/>
+	</regulatory>
+
+	<regulatory name="BR" testid="7">
+		<file-reference uri="https://antigo.anvisa.gov.br/documents/10181/2718376/RDC_67_2009_COMP.pdf/e2c25cc1-8bd4-4cc3-8703-c6d16641f7a0?version=1.0" filename="RDC 67 2009"/>
+		<file-reference uri="https://antigo.anvisa.gov.br/documents/10181/6320029/RDC_551_2021_.pdf/463d94a1-c365-4abd-9600-005ae7c1e22c" filename="RDC 551 2021"/>
+		<html-reference>
+			<uriref uri="https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2022/rdc-665-de-2022" filename="RDC 665/2022">
+				<hpathequals path="//*[@id=&quot;plone-document-byline&quot;]/span[1]/span[2]" value="19/05/2022 14h19" what="valid from" />
+				<hpathequals path="//*[@id=&quot;plone-document-byline&quot;]/span[2]/span[2]" value="01/11/2022 09h57" what="last update" />
+			</uriref>
+			<uriref uri="https://antigo.anvisa.gov.br/legislacao/?inheritRedirect=true#/visualizar/28465" filename="RDC 67/2009">
+				<hpathequals path="//*[@id=&quot;printTela&quot;]/div[5]/div/div/div[1]/div/div[1]/p/label" value=" 23/12/2009 " what="release date" />
+			</uriref>
+		</html-reference>
+	</regulatory>
+
+	<regulatory name="CA" testid="8">
+		<selenium-reference uri="https://laws-lois.justice.gc.ca/eng/regulations/sor-98-282/" filename="SOR98_282">
+			<webelement path="//*[@id='assentedDate']">
+				<scontains value="Regulations are current to 2024-03-06" what="validity date" />
+				<scontains value="on 2024-01-03" what="ammendment date" />
+			</webelement>
+			<webelement path="/html/body/div/div/main/div[2]/div/table/tbody/tr[8]/td[1]">
+				<sequals value="SOR/2020-262" what="name" />
+			</webelement>
+			<webelement path="/html/body/div/div/main/div[2]/div/table/tbody/tr[8]/td[2]">
+				<sequals value="2021-06-23" what="last change date" />
+			</webelement>
+		</selenium-reference>
+	</regulatory>
+
+	<regulatory name="AU" testid="9">
+		<html-reference>
+			<uriref uri="https://www.legislation.gov.au/C2004A03952/latest/text" filename="Therapeutic Goods Act 1989.html">
+				<select-tag tagname="span">
+					<hexists value="Latest version" what="latest version"/>
+					<hexists value="In force" what="state"/>
+					<hexists value="21 September 2023" what="issue date"/>
+				</select-tag>
+			</uriref>
+			<uriref uri="https://www.legislation.gov.au/F2002B00237/latest/text" filename="Therapeutic Goods (Medical Devices) Regulations 2002.html">
+				<select-tag tagname="span">
+					<hexists value="Latest version" what="latest version"/>
+					<hexists value="In force" what="state"/>
+					<hexists value="01 January 2024" what="issue date"/>
+				</select-tag>
+			</uriref>
+		</html-reference>
+	</regulatory>
+
+	<regulatory name="JP" testid="A">
+		<html-reference>
+			<uriref uri="https://www.pmda.go.jp/english/review-services/regulatory-info/0004.html" filename="MHLW Ministerial Ordinance No 169.html">
+				<hpathcontains path="//*[@id=&quot;contents&quot;]/div[2]/div/main/div/div/p[1]" value="2021: The second chapter of the ordinance was revised to align with ISO13485:2016." what="issue year" />
+			</uriref>
+		</html-reference>
+	</regulatory>
+
+	<regulatory name="CH" testid="B">
+		<selenium-reference uri="https://www.fedlex.admin.ch/eli/cc/2020/552/de" filename="MepV SR 812-213">
+			<webelement path="//*[@id=&quot;preface&quot;]/p[2]">
+				<sequals value="vom 1. Juli 2020 (Stand am 1. November 2023)" />
+			</webelement>
+		</selenium-reference>
+	</regulatory>
+	
+	<regulatory name="IMDRF" testid="C">
+		<imdrf-reference />
+	</regulatory>
+	
+	<regulatory name="UK" testid="D">
+		<html-reference>
+			<uriref uri="https://www.pmda.go.jp/english/review-services/regulatory-info/0004.html" filename="UK Regulation of medical devices.html">
+				<select-tag tagname="dl">
+					<hexists value="Last updated" what="last update" />
+					<hexists value="8 February 2024" what="udpate date" />
+				</select-tag>
+			</uriref>
+		</html-reference>
+	</regulatory>
+
+	<regulatory name="EU" testid="E">
+		<file-reference uri="https://health.ec.europa.eu/medical-devices-sector/new-regulations/guidance-mdcg-endorsed-documents-and-other-guidance_en" filename="EU_Health.html" />
+	</regulatory>
+
+	<regulatory name="EUHealth" testid="F">
+		<eu-health/>
+	</regulatory>
+
+<!--
+	<regulatory name="a" testid="a">
+		<iso-reference>
+			<num>a</num>
+		</iso-reference>
+	
+		<imdrf-reference/>
+	
+		<html-reference>
+			<uriref uri="" filename="">
+				<select-tag tagname="">
+					<hexists value="" what=""/>
+					<hequals path="" attr="" value="" what=""/>
+					<hcontains path="" attr="" value="" what=""/>
+				</select-tag>
+			</uriref>
+		</html-reference>
+				
+		<file-reference uri="" filename=""/>
+				
+		<selenium-reference uri="" filename="">
+			<webelement path="">
+				<sequals value="" what=""/>
+				<scontains value="" what=""/>
+			</webelement>
+		</selenium-reference>
+
+	</regulatory>
+-->
+</regulatories>
+					

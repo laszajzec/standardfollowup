@@ -54,44 +54,13 @@ public class FetchHtml {
 		return this;
 	}
 	
-	public FetchHtml checkNextElement(String elementQuery, int displacement, String nextValue) {
+	public FetchHtml checkTagEquals(String tag, String value) {
 		if (resultOK) {
 			boolean success = false;
 			for (int i = 0; i < selectedElements.size(); i++) {
 				Element e = selectedElements.get(i);
-				if (elementQuery.equals(e.text())) {
-					if (i + displacement < selectedElements.size() && nextValue.equals(selectedElements.get(i + displacement).text())) {
-						success = true;
-						break;
-					}
-				}
-			}
-			resultOK = success;
-		}
-		return this;
-	}
-	
-	public FetchHtml checkComplex(String value, Predicate<Element> furtherCheck) {
-		if (resultOK) {
-			boolean success = false;
-			for (int i = 0; i < selectedElements.size(); i++) {
-				Element e = selectedElements.get(i);
-				if (value.equals(e.text())) {
-					success = furtherCheck.test(e);
-					break;
-				}
-			}
-			resultOK = success;
-		}
-		return this;
-	}
-
-	public FetchHtml checkTag(String tag, String value) {
-		if (resultOK) {
-			boolean success = false;
-			for (int i = 0; i < selectedElements.size(); i++) {
-				Element e = selectedElements.get(i);
-				if (e.attr(tag).equals(value)) {
+				String referredValue = (tag == null || tag.isEmpty()) ? e.text() : e.attr(tag);
+				if (referredValue.equals(value)) {
 					success = true;
 					break;
 				}
@@ -101,7 +70,23 @@ public class FetchHtml {
 		return this;
 	}
 
-	public FetchHtml checkXPathTag(String xPath, String tag, String value) {
+	public FetchHtml checkTagContains(String tag, String value) {
+		if (resultOK) {
+			boolean success = false;
+			for (int i = 0; i < selectedElements.size(); i++) {
+				Element e = selectedElements.get(i);
+				String referredValue = (tag == null || tag.isEmpty()) ? e.text() : e.attr(tag);
+				if (referredValue.contains(value)) {
+					success = true;
+					break;
+				}
+			}
+			resultOK = success;
+		}
+		return this;
+	}
+
+	public FetchHtml checkXPathEquals(String xPath, String tag, String value) {
 		if (resultOK) {
 			Elements es = doc.selectXpath(xPath);
 			if (es.size() == 1) {
@@ -119,6 +104,18 @@ public class FetchHtml {
 			if (es.size() == 1) {
 				Element e = es.getFirst();
 				resultOK = cond.test(e);
+			}
+		}
+		return this;
+	}
+
+	public FetchHtml checkXPathContains(String xPath, String tag, String value) {
+		if (resultOK) {
+			Elements es = doc.selectXpath(xPath);
+			if (es.size() == 1) {
+				Element e = es.getFirst();
+				String referredValue = (tag == null || tag.isEmpty()) ? e.text() : e.attr(tag);
+				resultOK = referredValue.contains(value);
 			}
 		}
 		return this;

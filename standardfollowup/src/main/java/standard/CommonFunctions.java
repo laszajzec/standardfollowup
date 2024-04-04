@@ -38,8 +38,6 @@ import org.jsoup.nodes.Document;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
 
 public class CommonFunctions {
 	
@@ -376,7 +374,11 @@ public class CommonFunctions {
 		appendProtocol(String.format("%10s %10s %s", err, id, uri));
 		appendProtocolLn(remark == null ? "" : remark);
 	}
-	
+
+	public void appendProtocol(DocumentEvent err, String id, String uri, String what, String expectedValue, String currentValue) {
+		appendProtocol(String.format("%10s %10s %s %s: (%s <-> %s)", err, id, uri, what, expectedValue, currentValue));
+	}
+
 	public void storeProtokoll() throws IOException {
 		File protokollFile = new File(String.format(PROTOCOLL_TXT, baseDirPath, checkingDate));
 		FileUtils.writeStringToFile(protokollFile, protocol.toString(), Charset.forName("UTF-8"));
@@ -469,14 +471,6 @@ public class CommonFunctions {
                 return FileVisitResult.CONTINUE;
             }
 		});
-	}
-	
-	public WebDriver startChrome(String uri) {
-		ChromeOptions option = new ChromeOptions();
-		option.addArguments("silent-launch");
-		WebDriver driver = new ChromeDriver(option);
-		driver.get(uri);
-		return driver;
 	}
 	
 }

@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -19,16 +19,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.commons.collections4.CollectionUtils;
-import org.openqa.selenium.By;
-import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.FluentWait;
-import org.openqa.selenium.support.ui.Wait;
+import org.xml.sax.SAXException;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -69,13 +66,17 @@ public class RegulatioryChanges implements Callable<Integer> {
 
 	@Option (names = { "-r", "--reducedir" }, defaultValue="false",  description = "Deletes identical old files")
 	boolean reduceDir;
-	
+
+	@Option(names = { "-s", "--settings" }, description = "XML settings file")
+	String settingFileArg;
+
 	/**
 	 * @param Directory of collected documents or c:\temp\Standards if absent
 	 */
 	public static void main(String[] args) throws IOException, URISyntaxException {
 		int exitCode = new CommandLine(new RegulatioryChanges()).execute(args);
 		System.exit(exitCode);
+		new RegulatioryChanges();  // For UCD only
 	}
 
 	@Override
@@ -90,7 +91,7 @@ public class RegulatioryChanges implements Callable<Integer> {
 	public RegulatioryChanges() throws IOException, URISyntaxException {
 	}
 
-	private void doIt() throws IOException, URISyntaxException {
+	private void doIt() throws IOException, URISyntaxException, ParserConfigurationException, SAXException {
 		LocalDate dateOfLastCheck = null;
 		if (dateOfLastCheckString != null) {
 			try {
@@ -119,19 +120,32 @@ public class RegulatioryChanges implements Callable<Integer> {
 		}
 		
 		common.createNewDir(newDirArg);
-		if (newDirArg == null) {
-			collect();
-		}
 		if (oldDirArg == null) {
 			common.getLastDir();
+		}
+		if (settingFileArg == null) {
+			doitOld();
+		} else {
+			doitNew();
+		}
+		common.storeProtokoll();
+	}
+	
+	private void doitOld() throws IOException, URISyntaxException {
+		if (newDirArg == null) {
+			collect();
 		}
 		evaluate();
 		if (reduceDir) {
 			common.reduceOldDir();
 		}
-		common.storeProtokoll();
 	}
 
+	private void doitNew() throws ParserConfigurationException, SAXException, IOException, URISyntaxException {
+		InterpretCommands interpreter = new InterpretCommands(testCase);
+		interpreter.execute(Paths.get(settingFileArg));
+	}
+	
 	private void collect() throws IOException, URISyntaxException {
 		check('0', loadISO);
 		check('1', loadIEC);
@@ -269,7 +283,7 @@ public class RegulatioryChanges implements Callable<Integer> {
 		.checkIfExitsElement("EVS-EN 556-1:2002")
 		.checkIfExitsElement("Valid from 06.05.2002")
 		.select("i")
-		.checkXPathTag("//*[@id=\"product-details-form\"]/div[1]/div[2]/div[7]/div/div/div[2]/div[2]/div[1]/div/i", "class", "fas fa-check-circle green")
+		.checkXPathEquals("//*[@id=\"product-details-form\"]/div[1]/div[2]/div[7]/div/div/div[2]/div[2]/div[1]/div/i", "class", "fas fa-check-circle green")
 		.isResultOK();
 		
 		ok &= new FetchHtml("https://www.evs.ee/en/evs-en-iso-15004-2-2007", "EN ISO 15004-2")
@@ -277,14 +291,14 @@ public class RegulatioryChanges implements Callable<Integer> {
 		.checkIfExitsElement("EVS-EN ISO 15004-2:2007")
 		.checkIfExitsElement("Valid from 05.04.2007")
 		.select("i")
-		.checkXPathTag("//*[@id=\"product-details-form\"]/div[1]/div[2]/div[7]/div/div/div[2]/div[2]/div[1]/div/i", "class", "fas fa-check-circle green")
+		.checkXPathEquals("//*[@id=\"product-details-form\"]/div[1]/div[2]/div[7]/div/div/div[2]/div[2]/div[1]/div/i", "class", "fas fa-check-circle green")
 		.isResultOK();
 		
 		ok &= new FetchHtml("https://www.evs.ee/en/evs-en-22248-2003", "EN 22248")
 		.select("div")
 		.checkIfExitsElement("EVS-EN 22248:2003")
 		.checkIfExitsElement("Valid from 01.09.2003")
-		.checkXPathTag("//*[@id=\"product-details-form\"]/div[1]/div[2]/div[7]/div/div/div[2]/div/div[1]/div/i", "class", "fas fa-check-circle green")
+		.checkXPathEquals("//*[@id=\"product-details-form\"]/div[1]/div[2]/div[7]/div/div/div[2]/div/div[1]/div/i", "class", "fas fa-check-circle green")
 		.isResultOK();
 		
 		return ok;
@@ -295,8 +309,8 @@ public class RegulatioryChanges implements Callable<Integer> {
 		 * DIN 58220-3
 		 */
 		boolean ok = new FetchHtml("https://www.din.de/de/mitwirken/normenausschuesse/nafuo/veroeffentlichungen/wdc-beuth:din21:332097693", "DIN 58220-3.html")
-		.checkXPathTag("/html/body/div[4]/main/div[5]/div/div[1]/div[2]/div[1]/div[1]/span[2]", "", "2021-04")
-		.checkXPathTag("/html/body/div[4]/main/div[4]/div/div/div/span/span", "", "[AKTUELL]")
+		.checkXPathEquals("/html/body/div[4]/main/div[5]/div/div[1]/div[2]/div[1]/div[1]/span[2]", "", "2021-04")
+		.checkXPathEquals("/html/body/div[4]/main/div[4]/div/div/div/span/span", "", "[AKTUELL]")
 		.isResultOK();
 		return ok;
 	};
@@ -308,9 +322,16 @@ public class RegulatioryChanges implements Callable<Integer> {
 		 * Regulation (EU) 2017/745 (MDR)
 		 * European Medical Device Nomenclature (EMDN)
 		 * 
+		 * Abkürzungen
+		 * Erarbeitung Europäischer Normen (EN)
+		 * CEN (Europäisches Komitee für Normung)
+		 * Harmonisierte Normen (hEN)
+		 * CENELEC (Europäisches Komitee für Elektrotechnische Standardisierung)
+		 * ETSI (Europäisches Standardinstitut für Telekommunikation)
 		 * 
 		 * https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32017R0745 !!!!! no file
 		 */
+		/*
 		File file1 = common.downloadFile("https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:32011L0065", CommonFunctions.DownloadDir.CONTENT, 
 				"EU Directive Electronic Equipment.pdf"); // DIRECTIVE 2011/65/EU (RoHS)
 		File file2 = common.downloadFile("https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:32017R0745", CommonFunctions.DownloadDir.CONTENT, 
@@ -320,6 +341,28 @@ public class RegulatioryChanges implements Callable<Integer> {
 		File file4 = common.downloadFile("https://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:32021R2078", CommonFunctions.DownloadDir.CONTENT, 
 				"EU Medical Device Nomenclature.pdf"); // European Medical Device Nomenclature (EMDN)
 		return common.checkFiles(new File[] {file1, file2, file3, file4}, "https://eur-lex.europa.eu");
+		*/
+		boolean ok = true;
+		ok &= new FetchHtml("https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32011L0065", "EU Directive Electronic Equipment.html") // DIRECTIVE 2011/65/EU (RoHS)
+				.checkXPathContains("//*[@id=\"title\"]/text()", "", "Directive 2011/65/EU")
+				.checkXPathEquals("//*[@id=\"PP1Contents\"]/div/p[5]/a", "", "01/02/2024")
+				.isResultOK();
+
+		ok &= new FetchHtml("https://eur-lex.europa.eu/legal-content/en/ALL/?uri=CELEX%3A32006R1907", "EU Regulation No 1907-2006.html") // Regulation (EC) No 1907/2006 (REACH)
+				.checkXPathContains("//*[@id=\"title\"]/text()", "", "1907/2006")
+				.checkXPathEquals("//*[@id=\"PP1Contents\"]/div/p[5]/a", "", "01/12/2023")
+				.isResultOK();
+
+		ok &= new FetchHtml("https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32017R0745", "EU Medizinprodukte.html") // Regulation (EU) 2017/745 (MDR)
+				.checkXPathContains("//*[@id=\"title\"]/text()", "", "2017/745")
+				.checkXPathEquals("//*[@id=\"PP1Contents\"]/div/p[5]/a", "", "20/03/2023")
+				.isResultOK();
+
+		ok &= new FetchHtml("https://eur-lex.europa.eu/legal-content/DE/TXT/?uri=CELEX:32021R2078", "EU Medical Device Nomenclature.html") // European Medical Device Nomenclature (EMDN)
+				.checkXPathContains("//*[@id=\"title\"]/text()", "", "2021/2078")
+				.checkXPathContains("//*[@id=\"PP1Contents\"]/div/p[6]/span/img", "src", "green-on")
+				.isResultOK();
+		return ok;
 	};
 	
 	private SupplierE<Boolean> loadDE_MedProodGesetz = () -> {
@@ -334,26 +377,17 @@ public class RegulatioryChanges implements Callable<Integer> {
 		ok = common.checkFiles(new File[] {file1, file2}, "https://www.bundesgesundheitsministerium.de");
 		
 		ok &= new FetchHtml("https://dip.bundestag.de/vorgang/.../255346", "MPEUAnpG")
-		.checkXPathTag("//*[@id=\"content-übersicht\"]/div/div[1]/ul[1]/li[5]/span/ul/li/text()[1]", "", "26.05.2020")
+		.checkXPathEquals("//*[@id=\"content-übersicht\"]/div/div[1]/ul[1]/li[5]/span/ul/li/text()[1]", "", "26.05.2020")
 		.isResultOK();
 
 		ok &= new FetchHtml("https://www.bundesgesundheitsministerium.de/service/gesetze-und-verordnungen/detail/medizinprodukte-eu-anpassungsverordnung-mpeuanpv.html", "MPEUAnpV")
-		.checkXPathTag("//*[@id=\"article\"]/div[2]/div/div/div/div/div/span[2]", "", "26.05.2021")
+		.checkXPathEquals("//*[@id=\"article\"]/div[2]/div/div/div/div/div/span[2]", "", "26.05.2021")
 		.isResultOK();
 		
 		ok &= new FetchHtml("https://www.bundesgesundheitsministerium.de/service/gesetze-und-verordnungen/detail/verordnung-zur-abgabe-von-medizinprodukten-und-zur-aenderung-medizinprodukterechtlicher-vorschriften.html", "MPDG")
-		.checkXPathTag("//*[@id=\"article\"]/div[2]/div/div/div/div/div/span[2]", "", "25.07.2014")
+		.checkXPathEquals("//*[@id=\"article\"]/div[2]/div/div/div/div/div/span[2]", "", "25.07.2014")
 		.isResultOK();
 		return ok;
-	};
-
-	private SupplierE<Boolean> loadHealthcare = () -> {
-		/* type1 https://health.ec.europa.eu
-		 */
-		ReadPublicHealth obj = new ReadPublicHealth();
-		obj.collect();
-		obj.evaluate();
-		return obj.isOk();
 	};
 	
 	private SupplierE<Boolean> loadUS_FedReg = () -> {
@@ -409,22 +443,14 @@ public class RegulatioryChanges implements Callable<Integer> {
 		 * MepV SR 812.213
 		 */
 		String uri = "https://www.fedlex.admin.ch/eli/cc/2020/552/de";
-		WebDriver driver = common.startChrome(uri); 
-		Wait<WebDriver> wait = new FluentWait<WebDriver>(driver)
-				.withTimeout(Duration.ofSeconds(10))
-				.pollingEvery(Duration.ofSeconds(1))
-				.ignoring(NoSuchElementException.class);
-		WebElement e = wait.until(new Function<WebDriver, WebElement>() {
-			public WebElement apply(WebDriver driver) {
-				return driver.findElement(By.xpath("//*[@id=\"preface\"]/p[2]"));
+		try (Selenium selenium = new Selenium(uri)) {
+			WebElement e = selenium.findElementByXpathwait("//*[@id=\"preface\"]/p[2]");
+			boolean ok = e.getText().equals("vom 1. Juli 2020 (Stand am 1. November 2023)");
+			if (!ok) {
+				common.appendProtocol(CommonFunctions.DocumentEvent.CHANGED, "MepV SR 812.213", uri, null);
 			}
-		});
-		boolean ok = e.getText().equals("vom 1. Juli 2020 (Stand am 1. November 2023)");
-		if (!ok) {
-			common.appendProtocol(CommonFunctions.DocumentEvent.CHANGED, "MepV SR 812.213", uri, null);
+			return ok;
 		}
-		driver.quit();
-		return ok;
 	};
 	
 	private SupplierE<Boolean> loadImdrf = () -> {
@@ -469,12 +495,12 @@ public class RegulatioryChanges implements Callable<Integer> {
 				"RDC 551 2021"); // ??? https://www.in.gov.br/en/web/dou/-/resolucao-rdc-n-551-de-30-de-agosto-de-2021-341672897
 		ok &= common.checkFiles(new File[] {file1, file2}, "https://www.gov.br");
 		ok &= new FetchHtml("https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2022/rdc-665-de-2022", "RDC 665/2022")
-		.checkXPathTag("//*[@id=\"plone-document-byline\"]/span[1]/span[2]", "", "19/05/2022 14h19")
-		.checkXPathTag("//*[@id=\"plone-document-byline\"]/span[2]/span[2]", "", "01/11/2022 09h57")
+		.checkXPathEquals("//*[@id=\"plone-document-byline\"]/span[1]/span[2]", "", "19/05/2022 14h19")
+		.checkXPathEquals("//*[@id=\"plone-document-byline\"]/span[2]/span[2]", "", "01/11/2022 09h57")
 		.isResultOK();
 
 		ok &= new FetchHtml("https://antigo.anvisa.gov.br/legislacao/?inheritRedirect=true#/visualizar/28465", "RDC 67/2009")
-		.checkXPathTag("//*[@id=\"printTela\"]/div[5]/div/div/div[1]/div/div[1]/p/label", "", " 23/12/2009 ")
+		.checkXPathEquals("//*[@id=\"printTela\"]/div[5]/div/div/div[1]/div/div[1]/p/label", "", " 23/12/2009 ")
 		.isResultOK();
 		return ok;
 	};
@@ -487,22 +513,31 @@ public class RegulatioryChanges implements Callable<Integer> {
 		 * MDSAP AU P0002.008
 		 */
 		String uri = "https://laws-lois.justice.gc.ca/eng/regulations/sor-98-282/";
-		WebDriver driver = common.startChrome(uri); 
-		WebElement SOR98_282 = driver.findElement(By.xpath("//*[@id='assentedDate']"));
-		boolean ok1 = SOR98_282.getText().contains("Regulations are current to 2024-02-20");
-		boolean ok2 = SOR98_282.getText().contains("on 2024-01-03");
-		if (!ok1 || !ok2) {
-			common.appendProtocol(CommonFunctions.DocumentEvent.CHANGED, "SOR/98-282", uri, null);
+		try (Selenium selenium = new Selenium(uri)) {
+			WebElement SOR98_282 = selenium.findElementByXpath("//*[@id='assentedDate']");
+			boolean ok1 = selenium.containsText(SOR98_282, "Regulations are current to 2024-03-06");
+			boolean ok2 = selenium.containsText(SOR98_282, "on 2024-01-03");
+			if (!ok1 || !ok2) {
+				common.appendProtocol(CommonFunctions.DocumentEvent.CHANGED, "SOR/98-282", uri, null);
+			}
+			WebElement SOR2020_197_1 = selenium.findElementByXpath("/html/body/div/div/main/div[2]/div/table/tbody/tr[8]/td[1]");
+			boolean ok3 = selenium.equalText(SOR2020_197_1, "SOR/2020-262");
+			WebElement SOR2020_197_2 = selenium.findElementByXpath("/html/body/div/div/main/div[2]/div/table/tbody/tr[8]/td[2]");
+			boolean ok4 = selenium.equalText(SOR2020_197_2, "2021-06-23");
+			if (!ok3 || !ok4) {
+				common.appendProtocol(CommonFunctions.DocumentEvent.CHANGED, "SOR/2020-262", uri, "Ammendment");
+			}
+			return ok1 & ok2 & ok3 & ok4;
 		}
-		WebElement SOR2020_197_1 = driver.findElement(By.xpath("/html/body/div/div/main/div[2]/div/table/tbody/tr[8]/td[1]"));
-		boolean ok3 = "SOR/2020-262".equals(SOR2020_197_1.getText());
-		WebElement SOR2020_197_2 = driver.findElement(By.xpath("/html/body/div/div/main/div[2]/div/table/tbody/tr[8]/td[2]"));
-		boolean ok4 = "2021-06-23".equals(SOR2020_197_2.getText());
-		if (!ok3 || !ok4) {
-			common.appendProtocol(CommonFunctions.DocumentEvent.CHANGED, "SOR/2020-262", uri, "Ammendment");
-		}
-		driver.quit();
-		return ok1 & ok2 & ok3 & ok4;
+	};
+
+	private SupplierE<Boolean> loadHealthcare = () -> {
+		/* type1 https://health.ec.europa.eu
+		 */
+		ReadPublicHealth obj = new ReadPublicHealth();
+		obj.collect();
+		obj.evaluate();
+		return obj.isOk();
 	};
 
 	private void evaluate() throws IOException {
