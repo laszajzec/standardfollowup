@@ -41,17 +41,18 @@ import org.openqa.selenium.WebElement;
 
 public class CommonFunctions {
 	
-	public enum DownloadDir {CONTENT, SUMMARY, HTML}
-	public enum DocumentEvent {NEW, CHANGED, REVOKED, NOT_FOUND}
+	public enum DownloadDir {CONTENT, SUMMARY, HTML, XML}
+//	public enum DocumentEvent {NEW, CHANGED, REVOKED, NOT_FOUND}
 	public static final SimpleDateFormat dateAndTimeFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
 	
 	private static CommonFunctions INSTANCE;
-	private static final String PROTOCOLL_TXT = "%s/protocol-%s.txt";
+	private static final String PROTOCOLL_TXT = "%s/protocol-%s.csv";
 	private static final String JOURNAL_TXT = "journal.txt";
 	private static final String COMPARATOR_CMD = "compare.cmd";
 	private static final String DOWNLOAD_CONTENT_DIR = "files";
 	private static final String DOWNLOAD_SUMMARY_DIR = "summary";
 	private static final String DOWNLOAD_HTML_DIR = "html";
+	private static final String DOWNLOAD_XML_DIR = "xml";
 	
 	
 	private static final List<String> ISO_STANDARDS = Arrays.asList(new String[]
@@ -70,6 +71,7 @@ public class CommonFunctions {
 	private String newDirName;
 	private String oldDirName;
 	private final LocalDate dateOfLastCheck;
+	private boolean protocolHeadMissing = true;
 	
 	public static CommonFunctions get() {
 		return INSTANCE;
@@ -263,6 +265,7 @@ public class CommonFunctions {
 		if (DownloadDir.CONTENT == dir) return DOWNLOAD_CONTENT_DIR;
 		if (DownloadDir.SUMMARY  == dir) return DOWNLOAD_SUMMARY_DIR;
 		if (DownloadDir.HTML  == dir) return DOWNLOAD_HTML_DIR;
+		if (DownloadDir.XML  == dir) return DOWNLOAD_XML_DIR;
 		return null;
 	}
 	
@@ -370,13 +373,41 @@ public class CommonFunctions {
 		protocol.append(System.lineSeparator());
 	}
 	
-	public void appendProtocol(DocumentEvent err, String id, String uri, String remark) {
+	public void appendProtocol(CheckPosition.Reason err, String id, String uri, String remark) {
 		appendProtocol(String.format("%10s %10s %s", err, id, uri));
 		appendProtocolLn(remark == null ? "" : remark);
 	}
 
-	public void appendProtocol(DocumentEvent err, String id, String uri, String what, String expectedValue, String currentValue) {
+	public void appendProtocol(CheckPosition.Reason err, String id, String uri, String what, String expectedValue, String currentValue) {
 		appendProtocol(String.format("%10s %10s %s %s: (%s <-> %s)", err, id, uri, what, expectedValue, currentValue));
+	}
+	
+	public void appendProtocol(CheckPosition pos) {
+		if (protocolHeadMissing) {
+			appendProtocolLn("Institute;File;URI;Reason;Tag;Path;What;Expected;Found");
+			protocolHeadMissing = false;
+		}
+		StringBuilder txt = new StringBuilder();
+		txt.append("\"");
+		txt.append(pos.getInstitute());
+		txt.append("\";\"");
+		txt.append(pos.getFileName());
+		txt.append("\";\"");
+		txt.append(pos.getUri());
+		txt.append("\";\"");
+		txt.append(pos.getReason());
+		txt.append("\";\"");
+		txt.append(pos.getTag());
+		txt.append("\";\"");
+		txt.append(pos.getPath());
+		txt.append("\";\"");
+		txt.append(pos.getWhat());
+		txt.append("\";\"");
+		txt.append(pos.getExpectedValue());
+		txt.append("\";\"");
+		txt.append(pos.getCurrentValue());
+		txt.append("\"");
+		appendProtocolLn(txt.toString());
 	}
 
 	public void storeProtokoll() throws IOException {
@@ -443,11 +474,19 @@ public class CommonFunctions {
 			Path oldFile = getOldEquivalent(newFile);
 			if (Files.exists(oldFile)) {
 				if (!areFilesIdentical(newFile, oldFile.toFile())) {
-					CommonFunctions.get().appendProtocol(CommonFunctions.DocumentEvent.CHANGED, newFile.getName(), uri, null);
+//					CommonFunctions.get().appendProtocol(CommonFunctions.DocumentEvent.CHANGED, newFile.getName(), uri, null);
+					CheckPosition pos = CheckPosition.get();
+					pos.setReason(CheckPosition.Reason.DIFFERENT);
+					pos.setFileName(newFile.toString());
+					CommonFunctions.get().appendProtocol(pos);
 					ok = false;
 				}
 			} else {
-				CommonFunctions.get().appendProtocol(CommonFunctions.DocumentEvent.NEW, newFile.getName(), uri, null);
+//				CommonFunctions.get().appendProtocol(CommonFunctions.DocumentEvent.NEW, newFile.getName(), uri, null);
+				CheckPosition pos = CheckPosition.get();
+				pos.setReason(CheckPosition.Reason.NEW);
+				pos.setFileName(newFile.toString());
+				CommonFunctions.get().appendProtocol(pos);
 				ok = false;
 			}
 		}

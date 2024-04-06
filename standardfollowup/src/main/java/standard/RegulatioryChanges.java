@@ -447,7 +447,7 @@ public class RegulatioryChanges implements Callable<Integer> {
 			WebElement e = selenium.findElementByXpathwait("//*[@id=\"preface\"]/p[2]");
 			boolean ok = e.getText().equals("vom 1. Juli 2020 (Stand am 1. November 2023)");
 			if (!ok) {
-				common.appendProtocol(CommonFunctions.DocumentEvent.CHANGED, "MepV SR 812.213", uri, null);
+				common.appendProtocol(CheckPosition.Reason.DIFFERENT, "MepV SR 812.213", uri, null);
 			}
 			return ok;
 		}
@@ -518,14 +518,14 @@ public class RegulatioryChanges implements Callable<Integer> {
 			boolean ok1 = selenium.containsText(SOR98_282, "Regulations are current to 2024-03-06");
 			boolean ok2 = selenium.containsText(SOR98_282, "on 2024-01-03");
 			if (!ok1 || !ok2) {
-				common.appendProtocol(CommonFunctions.DocumentEvent.CHANGED, "SOR/98-282", uri, null);
+				common.appendProtocol(CheckPosition.Reason.DIFFERENT, "SOR/98-282", uri, null);
 			}
 			WebElement SOR2020_197_1 = selenium.findElementByXpath("/html/body/div/div/main/div[2]/div/table/tbody/tr[8]/td[1]");
 			boolean ok3 = selenium.equalText(SOR2020_197_1, "SOR/2020-262");
 			WebElement SOR2020_197_2 = selenium.findElementByXpath("/html/body/div/div/main/div[2]/div/table/tbody/tr[8]/td[2]");
 			boolean ok4 = selenium.equalText(SOR2020_197_2, "2021-06-23");
 			if (!ok3 || !ok4) {
-				common.appendProtocol(CommonFunctions.DocumentEvent.CHANGED, "SOR/2020-262", uri, "Ammendment");
+				common.appendProtocol(CheckPosition.Reason.DIFFERENT, "SOR/2020-262", uri, "Ammendment");
 			}
 			return ok1 & ok2 & ok3 & ok4;
 		}

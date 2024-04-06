@@ -19,12 +19,26 @@ public class Selenium implements Closeable {
 	private final WebDriver driver;
 	private final boolean withTest = true;
 	private String lastPath;
+	private CheckPosition firstDifference;
+	private boolean resultOK = true;
 
 	public Selenium(String uri) {
 		ChromeOptions option = new ChromeOptions();
 		option.addArguments("headless");
 		driver = new ChromeDriver(option);
 		driver.get(uri);
+	}
+
+	private CheckPosition detectedDiff(String expectedValue, CheckPosition.Reason reason) {
+		if (firstDifference == null) {
+			try {
+				firstDifference = (CheckPosition)(CheckPosition.get().clone());
+				firstDifference.setExpectedValue(expectedValue);
+			} catch (CloneNotSupportedException e) {
+				System.out.println("CheckPosition cloning error!");
+			}
+		}
+		return firstDifference;
 	}
 
 	public WebElement findElementByXpath(String xPath) {
@@ -51,6 +65,8 @@ public class Selenium implements Closeable {
 		if (eString.equals(expectedText)) {
 			return true;
 		} else {
+			detectedDiff(expectedText, CheckPosition.Reason.DIFFERENT).setCurrentValue(eString);
+			resultOK = false;
 			if (withTest) {
 				System.out.format("Selenium in %s found >%s< instead of >%s<%n", lastPath, eString, expectedText);
 			}
@@ -63,14 +79,22 @@ public class Selenium implements Closeable {
 		if (eString.contains(expectedText)) {
 			return true;
 		} else {
+			detectedDiff(expectedText, CheckPosition.Reason.DIFFERENT).setCurrentValue(eString);
+			resultOK = false;
 			if (withTest) {
 				System.out.format("Selenium in %s found >%s< does not contain >%s<%n", lastPath, eString, expectedText);
 			}
 			return false;
 		}
 	}
-
 	
+	public boolean isResultOK() {
+		if (!resultOK) {
+			CommonFunctions.get().appendProtocol(firstDifference);
+		}
+		return resultOK;
+	}
+
 	@Override
 	public void close() throws IOException {
 		if (driver != null) {

@@ -19,8 +19,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import standard.CommonFunctions.DocumentEvent;
-
 public class ReadISO implements RegulatorySource {
 
 	private static final String UPDATE_LIST_URI = "https://www.iso.org/iso-update.html";
@@ -63,8 +61,9 @@ public class ReadISO implements RegulatorySource {
 			System.out.println("Exception in ReadISO evaluate: " + e.getMessage());
 			e.printStackTrace();
 		}
-		writeToProtocol(changedStandards, DocumentEvent.CHANGED);
-		writeToProtocol(withdrawnedStandards, DocumentEvent.REVOKED);
+		CheckPosition pos = CheckPosition.get().setInstitute("ISO");
+		writeToProtocol(changedStandards, CheckPosition.Reason.DIFFERENT, pos);
+		writeToProtocol(withdrawnedStandards, CheckPosition.Reason.REWOKED, pos);
 		System.out.format("Result: %d standards changed, %d withdrawn%n", changedStandards.size(), withdrawnedStandards.size());
 	}
 
@@ -209,9 +208,11 @@ public class ReadISO implements RegulatorySource {
 		return res.trim();
 	}
 	
-	private void writeToProtocol(List<Deviation> numbers, DocumentEvent reason) {
+	private void writeToProtocol(List<Deviation> numbers, CheckPosition.Reason reason, CheckPosition pos) {
 		for (Deviation dev : numbers) {
-			common.appendProtocol(reason, dev.getIsoNumber(), dev.getDocumentName(), null);
+			pos.setReason(reason).setFileName(dev.getDocumentName()).setWhat(dev.getIsoNumber());
+			common.appendProtocol(pos);
+//			common.appendProtocol(reason, dev.getIsoNumber(), dev.getDocumentName(), null);
 			ok = false;
 		}
 	}

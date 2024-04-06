@@ -17,6 +17,7 @@ public class FetchHtml {
 	private boolean linkNotValid = false;
 	private final String uri;
 	private final String fileName;
+	private CheckPosition firstDifference;
 	
 	public FetchHtml(String uri, String fileName) throws IOException, URISyntaxException {
 //		doc = Jsoup.connect("https://www.din.de/de/mitwirken/normenausschuesse/nafuo/veroeffentlichungen/wdc-beuth:din21:332097693").get();
@@ -38,6 +39,18 @@ public class FetchHtml {
 		}
 		return this;
 	}
+	
+	private CheckPosition detectedDiff(String expectedValue, CheckPosition.Reason reason) {
+		if (firstDifference == null) {
+			try {
+				firstDifference = (CheckPosition)(CheckPosition.get().clone());
+				firstDifference.setExpectedValue(expectedValue);
+			} catch (CloneNotSupportedException e) {
+				System.out.println("CheckPosition cloning error!");
+			}
+		}
+		return firstDifference;
+	}
 
 	public FetchHtml checkIfExitsElement(String value) {
 		if (resultOK) {
@@ -50,6 +63,7 @@ public class FetchHtml {
 				}
 			}
 			resultOK = success;
+			if (!success) { detectedDiff(value, CheckPosition.Reason.DIFFERENT); }
 		}
 		return this;
 	}
@@ -57,15 +71,21 @@ public class FetchHtml {
 	public FetchHtml checkTagEquals(String tag, String value) {
 		if (resultOK) {
 			boolean success = false;
+			String referredValue = null;
 			for (int i = 0; i < selectedElements.size(); i++) {
 				Element e = selectedElements.get(i);
-				String referredValue = (tag == null || tag.isEmpty()) ? e.text() : e.attr(tag);
+				referredValue = (tag == null || tag.isEmpty()) ? e.text() : e.attr(tag);
 				if (referredValue.equals(value)) {
 					success = true;
 					break;
 				}
 			}
 			resultOK = success;
+			if (!success) { 
+				detectedDiff(value, CheckPosition.Reason.DIFFERENT)
+				.setTag(tag)
+				.setCurrentValue(referredValue);
+			}
 		}
 		return this;
 	}
@@ -73,15 +93,21 @@ public class FetchHtml {
 	public FetchHtml checkTagContains(String tag, String value) {
 		if (resultOK) {
 			boolean success = false;
+			String referredValue = null;
 			for (int i = 0; i < selectedElements.size(); i++) {
 				Element e = selectedElements.get(i);
-				String referredValue = (tag == null || tag.isEmpty()) ? e.text() : e.attr(tag);
+				referredValue = (tag == null || tag.isEmpty()) ? e.text() : e.attr(tag);
 				if (referredValue.contains(value)) {
 					success = true;
 					break;
 				}
 			}
 			resultOK = success;
+			if (!success) { 
+				detectedDiff(value, CheckPosition.Reason.DIFFERENT)
+				.setTag(tag)
+				.setCurrentValue(referredValue);
+			}
 		}
 		return this;
 	}
@@ -93,6 +119,12 @@ public class FetchHtml {
 				Element e = es.getFirst();
 				String referredValue = (tag == null || tag.isEmpty()) ? e.text() : e.attr(tag);
 				resultOK = referredValue.equals(value);
+				if (!resultOK) { 
+					detectedDiff(value, CheckPosition.Reason.DIFFERENT)
+					.setPath(xPath)
+					.setTag(tag)
+					.setCurrentValue(referredValue);
+				}
 			}
 		}
 		return this;
@@ -116,6 +148,12 @@ public class FetchHtml {
 				Element e = es.getFirst();
 				String referredValue = (tag == null || tag.isEmpty()) ? e.text() : e.attr(tag);
 				resultOK = referredValue.contains(value);
+				if (!resultOK) { 
+					detectedDiff(value, CheckPosition.Reason.DIFFERENT)
+					.setPath(xPath)
+					.setTag(tag)
+					.setCurrentValue(referredValue);
+				}
 			}
 		}
 		return this;
@@ -134,15 +172,16 @@ public class FetchHtml {
 		return resultOK;
 	}
 	
-	private CommonFunctions.DocumentEvent getProblemReason() {
-		if (linkNotValid) return CommonFunctions.DocumentEvent.NOT_FOUND;
+	private CheckPosition.Reason getProblemReason() {
+		if (linkNotValid) return CheckPosition.Reason.NOT_FOUND;
 		else if (resultOK) return null;
-		else return CommonFunctions.DocumentEvent.CHANGED;
+		else return CheckPosition.Reason.DIFFERENT;
 	}
 	
 	public void reportError() {
 		if (!resultOK) {
-			CommonFunctions.get().appendProtocol(getProblemReason(), fileName, uri, null);
+//			CommonFunctions.get().appendProtocol(getProblemReason(), fileName, uri, null);
+			CommonFunctions.get().appendProtocol(firstDifference);
 		}
 	}
 	

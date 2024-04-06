@@ -2,7 +2,6 @@ package standard;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -14,10 +13,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.openqa.selenium.WebElement;
 import org.w3c.dom.Document;
-import org.w3c.dom.DocumentType;
 import org.w3c.dom.Element;
-import org.w3c.dom.Entity;
-import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -83,7 +79,7 @@ public class InterpretCommands {
 		String instituteName = institute.getAttribute("name");
 		String testId = institute.getAttribute("testid");
 		if (testCases == null || testCases.isEmpty() || testCases.contains(testId)) {
-			pos.institute = instituteName;
+			pos.setInstitute(instituteName);
 
 			NodeList sources = institute.getChildNodes();
 			for (int i = 0; i < sources.getLength(); i++) {
@@ -158,8 +154,8 @@ public class InterpretCommands {
 		Element sourceE = (Element)sourceN;
 		String uri = sourceE.getAttribute("uri");
 		String fileName = sourceE.getAttribute("filename");
-		pos.uri = uri;
-		pos.fileName = fileName;
+		pos.setUri(uri);
+		pos.setFileName(fileName);
 		CommonFunctions.DownloadDir target = fileName.endsWith(".html") || fileName.endsWith(".XML") ? CommonFunctions.DownloadDir.HTML : CommonFunctions.DownloadDir.CONTENT;
 		File file = common.downloadFile(uri, target, fileName);
 		ok &= common.checkFiles(new File[] {file}, uri);
@@ -177,8 +173,8 @@ public class InterpretCommands {
 		for (Element uriRef : getElements(sourceN)) {
 			String uri = ((Element)uriRef).getAttribute("uri");
 			String fileName = uriRef.getAttribute("filename");
-			pos.uri = uri;
-			pos.fileName = fileName;
+			pos.setUri(uri);
+			pos.setFileName(fileName);
 			handleHtmlStruct(uriRef);
 		}
 	}
@@ -194,7 +190,7 @@ public class InterpretCommands {
 //			handleTagConditions(tagRef, html);
 //			ok &= html.isResultOK();
 //		}		
-		FetchHtml html = new FetchHtml(pos.uri, pos.fileName);
+		FetchHtml html = new FetchHtml(pos.getUri(), pos.getFileName());
 		for (Element uriStructElement : getElements(uriRef)) {
 			switch (uriStructElement.getNodeName()) {
 			case "select-tag":
@@ -245,12 +241,12 @@ public class InterpretCommands {
 //			}
 //		}		
 		String tagName = tagRef.getAttribute("tagname");
-		pos.tag = tagName;
+		pos.setTag(tagName);
 		html.select(tagName);
 		for (Element conditionRef : getElements(tagRef)) {
 			String conditionValue = conditionRef.getAttribute("value");
 			String conditionWhat = conditionRef.getAttribute("what");
-			pos.what = conditionWhat;
+			pos.setWhat(conditionWhat);
 			String attr = conditionRef.getAttribute("attr");
 			switch (conditionRef.getNodeName()) {
 			case "hexists":
@@ -276,9 +272,9 @@ public class InterpretCommands {
 		String attr = conditionRef.getAttribute("attr");
 		String conditionValue = conditionRef.getAttribute("value");
 		String conditionWhat = conditionRef.getAttribute("what");
-		pos.path = path;
-		pos.tag = attr;
-		pos.what = conditionWhat;
+		pos.setPath(path);
+		pos.setTag(attr);
+		pos.setWhat(conditionWhat);
 		if (equlity) {
 			html.checkXPathEquals(path, attr, conditionValue);
 		} else {
@@ -299,10 +295,11 @@ public class InterpretCommands {
 //			}
 			for (Element webElement : getElements(sourceN)) {
 				String path = webElement.getAttribute("path");
-				pos.path = path;
+				pos.setPath(path);
 				WebElement e = selenium.findElementByXpathwait(path);
 				handleSeleniumConditions(selenium, webElement, e);
 			}
+			selenium.isResultOK();
 		}
 	}
 	
@@ -328,7 +325,7 @@ public class InterpretCommands {
 		for (Element seleniumCondition : getElements(webElement)) {
 			String value = seleniumCondition.getAttribute("value");
 			String conditionWhat = seleniumCondition.getAttribute("what");
-			pos.what = conditionWhat;
+			pos.setWhat(conditionWhat);
 			switch (seleniumCondition.getNodeName()) {
 			case "sequals":
 				ok &= selenium.equalText(e, value);
@@ -343,6 +340,7 @@ public class InterpretCommands {
 		}		
 	}
 	
+	/*	
 	private int indent = 0;
 	private PrintStream out = System.out;
 	private final String basicIndent = " ";
@@ -478,6 +476,7 @@ public class InterpretCommands {
 	        }
 	    }
 	    out.println();
-	}	
+	}
+*/	
 }
 
