@@ -14,21 +14,14 @@ public class FetchHtml {
 	private org.jsoup.nodes.Document doc;
 	private org.jsoup.select.Elements selectedElements;
 	private boolean resultOK = true;
-	private boolean linkNotValid = false;
-	private final String uri;
-	private final String fileName;
 	private CheckPosition firstDifference;
 	
 	public FetchHtml(String uri, String fileName) throws IOException, URISyntaxException {
-//		doc = Jsoup.connect("https://www.din.de/de/mitwirken/normenausschuesse/nafuo/veroeffentlichungen/wdc-beuth:din21:332097693").get();
-		this.uri = uri;
-		this.fileName = fileName;
 		String fileNameWithType = fileName.contains(".") ? fileName : fileName + ".html";
 		try {
 			doc = CommonFunctions.get().downloadFileLink(uri, null, CommonFunctions.DownloadDir.HTML, fileNameWithType);
 		} catch (org.jsoup.HttpStatusException e) {
 			resultOK = false;
-			linkNotValid = true;
 			e.printStackTrace();
 		}
 	}
@@ -170,12 +163,6 @@ public class FetchHtml {
 	public boolean isResultOK() {
 		reportError();
 		return resultOK;
-	}
-	
-	private CheckPosition.Reason getProblemReason() {
-		if (linkNotValid) return CheckPosition.Reason.NOT_FOUND;
-		else if (resultOK) return null;
-		else return CheckPosition.Reason.DIFFERENT;
 	}
 	
 	public void reportError() {

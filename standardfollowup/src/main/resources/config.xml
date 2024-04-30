@@ -140,7 +140,7 @@
 			<uriref uri="https://webstore.iec.ch/publication/67220" filename="IEC 62366-1 2015 AMD1 2020">
 				<select-tag tagname="span">
 					<hexists value="2020-06-17" what="issue date"/>
-					<hexists value="1,1" what="version"/>
+					<hexists value="1.1" what="version"/>
 					<hexists value="2026" what="review year"/>
 				</select-tag>
 			</uriref>
@@ -154,7 +154,7 @@
 			<uriref uri="https://webstore.iec.ch/publication/7076" filename="IEC 62471 2006">
 				<select-tag tagname="span">
 					<hexists value="2006-07-26" what="issue date"/>
-					<hexists value="1,0" what="version"/>
+					<hexists value="1.0" what="version"/>
 					<hexists value="2024" what="review year"/>
 				</select-tag>
 			</uriref>
@@ -296,7 +296,7 @@
 	<regulatory name="JP" testid="A">
 		<html-reference>
 			<uriref uri="https://www.pmda.go.jp/english/review-services/regulatory-info/0004.html" filename="MHLW Ministerial Ordinance No 169.html">
-				<hpathcontains path="//*[@id=&quot;contents&quot;]/div[2]/div/main/div/div/p[1]" value="2021: The second chapter of the ordinance was revised to align with ISO13485:2016." what="issue year" />
+				<hpathcontains path="//*[@id=&quot;contents&quot;]/div[2]/div/main/div/div/div/table/tbody/tr[4]/td" value="2021: The second chapter of the ordinance was revised to align with ISO13485:2016." what="issue year" />
 			</uriref>
 		</html-reference>
 	</regulatory>
@@ -315,11 +315,15 @@
 	
 	<regulatory name="UK" testid="D">
 		<html-reference>
-			<uriref uri="https://www.pmda.go.jp/english/review-services/regulatory-info/0004.html" filename="UK Regulation of medical devices.html">
+			<uriref uri="https://www.gov.uk/guidance/regulating-medical-devices-in-the-uk" filename="UK Regulation of medical devices.html">
+			<!--
 				<select-tag tagname="dl">
 					<hexists value="Last updated" what="last update" />
 					<hexists value="8 February 2024" what="udpate date" />
 				</select-tag>
+				-->
+				<hpathcontains path="//*[@id=&quot;content&quot;]/div[2]/div/div[1]/div/dl/dt[3]" value="Last updated" what="last update" />
+				<hpathcontains path="//*[@id=&quot;content&quot;]/div[2]/div/div[1]/div/dl/dd[3]" value="8 February 2024" what="udpate date" />
 			</uriref>
 		</html-reference>
 	</regulatory>
