@@ -1,18 +1,24 @@
 package standard;
 
+import java.time.LocalDate;
+import java.util.Objects;
+
 public class CheckPosition implements Cloneable{
-	enum Reason {NEW, DIFFERENT, REWOKED, NOT_FOUND}
+	public enum Reason {NEW, DIFFERENT, REWOKED, NOT_FOUND, UNCERTAIN}
 	
 	private static CheckPosition instance;
-	private String institute;
-	private String uri;
-	private String fileName;
-	private String path;
-	private String tag;
+	private String institute;		// Regulatory issuer: ISO, DIN, IEC, ...
+	private String id; 				// Name or sign of norm
+	private String uri;				// Where to find 
+	private String fileName;		// Document if stored
+	private String fileLink;		// Document in web
+	private String path;			// Element within page
+	private String tag;				// Tag name within page
 	private String what;
 	private String expectedValue;
-	private String currentValue;
-	Reason reason;
+	private String currentValue;	// Found value
+	private Reason reason;			// Art of change
+	private LocalDate changeDate;	// Validity date
 
 	public static CheckPosition get() {
 		if (instance == null) {
@@ -21,8 +27,52 @@ public class CheckPosition implements Cloneable{
 		return instance;
 	}
 
-	public Object clone() throws CloneNotSupportedException {
-        return super.clone();
+	public CheckPosition clone() {
+		try {
+        return (CheckPosition)super.clone();
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+	
+	private void clearAll() {
+		institute = null;
+		id = null;
+		uri = null; 
+		fileName = null;
+		fileLink = null;
+		path = null;
+		tag = null;
+		what = null;
+		expectedValue = null;
+		currentValue = null;
+		reason = null;
+		changeDate = null;
+	}
+	
+	
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(institute, id, fileLink, fileName, path);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		CheckPosition other = (CheckPosition) obj;
+		return 
+			Objects.equals(institute, other.institute)
+			&& Objects.equals(id, other.id) 
+			&& Objects.equals(fileLink, other.fileLink) 
+			&& Objects.equals(fileName, other.fileName)
+			&& Objects.equals(path, other.path);
 	}
 
 	public String getInstitute() {
@@ -30,6 +80,7 @@ public class CheckPosition implements Cloneable{
 	}
 
 	public CheckPosition setInstitute(String institute) {
+		clearAll();
 		this.institute = institute;
 		return this;
 	}
@@ -104,6 +155,38 @@ public class CheckPosition implements Cloneable{
 	public CheckPosition setReason(Reason reason) {
 		this.reason = reason;
 		return this;
+	}
+
+	public static CheckPosition getInstance() {
+		return instance;
+	}
+
+	public static void setInstance(CheckPosition instance) {
+		CheckPosition.instance = instance;
+	}
+
+	public String getId() {
+		return id == null ? "" : id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public String getFileLink() {
+		return fileLink == null ? "" : fileLink;
+	}
+
+	public void setFileLink(String fileLink) {
+		this.fileLink = fileLink;
+	}
+
+	public LocalDate getChangeDate() {
+		return changeDate;
+	}
+
+	public void setChangeDate(LocalDate changeDate) {
+		this.changeDate = changeDate;
 	}
 	
 }

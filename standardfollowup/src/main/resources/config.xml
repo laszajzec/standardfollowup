@@ -1,20 +1,28 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <!DOCTYPE regulatories [
-	<!ELEMENT regulatories (regulatory+)>
-	<!ELEMENT regulatory (iso-reference | imdrf-reference | eu-health | html-reference | file-reference | selenium-reference)+ >
+	<!ELEMENT regulatories (standardNumbers, regulatory+)>
+	
+	<!ELEMENT standardNumbers (iso-num+)>
+	<!ELEMENT iso-num EMPTY>
+	<!ATTLIST iso-num
+		num CDATA #REQUIRED
+		clients CDATA #REQUIRED>
+	<!ELEMENT num (#PCDATA)>
+	<!ELEMENT regulatory (iso-reference | evn-reference | imdrf-reference | eu-health | html-reference | file-reference | selenium-reference)+ >
 	<!ATTLIST regulatory 
 		name ID #REQUIRED
 		testid CDATA #REQUIRED>
 
-	<!ELEMENT iso-reference (num)+>
-	<!ELEMENT num (#PCDATA)>
+	<!ELEMENT iso-reference EMPTY>
+	
+	<!ELEMENT evn-reference EMPTY>
 	
 	<!ELEMENT imdrf-reference EMPTY>
 	<!ELEMENT html-reference (uriref)+>
 
 	<!ELEMENT eu-health EMPTY>
 
-	<!ELEMENT uriref (select-tag | hpathequals | hpathcontains )+>
+	<!ELEMENT uriref (select-tag | hpathequals | hpathcontains | hpathdate )+>
 	<!ATTLIST uriref 
 		uri CDATA #REQUIRED
 		filename CDATA #REQUIRED>
@@ -39,6 +47,12 @@
 		attr CDATA #IMPLIED
 		value CDATA #REQUIRED
 		what CDATA #IMPLIED>
+	<!ELEMENT hpathdate (#PCDATA)>
+	<!ATTLIST hpathdate
+		path CDATA #REQUIRED
+		attr CDATA #IMPLIED
+		substring CDATA #IMPLIED
+		format CDATA #REQUIRED>
 	<!ELEMENT hpathequals EMPTY>
 	<!ATTLIST hpathequals
 		path CDATA #REQUIRED
@@ -79,89 +93,95 @@
 ]>
 
 <regulatories>
+
+	<standardNumbers>
+			<iso-num num="4180" clients="1"/>
+			<iso-num num="8429" clients="1"/>
+			<iso-num num="8596" clients="1"/>
+			<iso-num num="8612" clients="1"/>
+			<iso-num num="9022-3" clients="1"/>
+			<iso-num num="9801" clients="1"/>
+			<iso-num num="10342" clients="1"/>
+			<iso-num num="10343" clients="1"/>
+			<iso-num num="10938" clients="1"/>
+			<iso-num num="10993-18" clients="1"/>
+			<iso-num num="10993-1" clients="1"/>
+			<iso-num num="10993-5" clients="1"/>
+			<iso-num num="10993-7" clients="1"/>
+			<iso-num num="11135" clients="1"/>
+			<iso-num num="11137-1" clients="1"/>
+			<iso-num num="11607-1" clients="1"/>
+			<iso-num num="11607-2" clients="1"/>
+			<iso-num num="11737-1" clients="1"/>
+			<iso-num num="12866" clients="1"/>
+			<iso-num num="12867" clients="1"/>
+			<iso-num num="13485" clients="1"/>
+			<iso-num num="14971" clients="1"/>
+			<iso-num num="15004-1" clients="1"/>
+			<iso-num num="15223-1" clients="1"/>
+			<iso-num num="15223-2" clients="1"/>
+			<iso-num num="17664-1" clients="1"/>
+			<iso-num num="17664-2" clients="1"/>
+			<iso-num num="19011" clients="1"/>
+			<iso-num num="19980" clients="1"/> 
+			<iso-num num="20417" clients="1"/>
+			<iso-num num="22665" clients="1"/>
+			
+			<iso-num num="19911" clients="1"/> <!-- CD registered -->
+			<iso-num num="5011" clients="1"/> <!-- DIS cirkulatecd -->
+			<iso-num num="7544" clients="1"/> <!-- FDIS cirkulated -->
+			<iso-num num="22760-4" clients="1"/> <!-- Standards published -->
+			<iso-num num="7527" clients="1"/> <!-- Withdrown -->
+			<iso-num num="18113" clients="1"/> <!-- Withdrown -->
+	</standardNumbers>
+
 	<regulatory name="ISO" testid="0">
-		<iso-reference>
-			<num>10342</num> <num>10343</num> <num>10938</num> <num>10993-18</num> <num>10993-1</num>
-			<num>10993-5</num> <num>10993-7</num> <num>11135</num> <num>11137-1</num> <num>11607-1</num>
-			<num>11607-2</num> <num>11737-1</num> <num>12866</num> <num>12867</num> <num>13485</num>
-			<num>14971</num> <num>15004-1</num> <num>15223-1</num> <num>15223-2</num> <num>17664-1</num>
-			<num>17664-2</num> <num>19011</num> <num>19980</num> 
-			<num>20417</num> <num>22665</num>
-			<num>4180</num>
-			<num>8429</num> <num>8596</num> <num>8612</num>
-			<num>9022-3</num> <num>9801</num>
-		</iso-reference>
+		<iso-reference/>
 	</regulatory>
 
 	<regulatory name="IEC" testid="1">
 		<html-reference>
 			<uriref uri="https://webstore.iec.ch/publication/67497" filename="IEC 60601-1 2005 AMD1 2012 AMD2 2020">
-				<select-tag tagname="span">
-					<hexists value="2020-08-20" what="issue date"/>
-					<hexists value="3.2" what="version"/>
-					<hexists value="2028" what="review year"/>
-				</select-tag>
+				<hpathdate path="//*[@class=&quot;iec-table&quot;][1]/tbody/tr[2]/td[2]" format="yyyy-MM-dd" />
+				<hpathequals path="//*[@class=&quot;iec-table&quot;][1]/tbody/tr[3]/td[2]" value = "3.2" />
 			</uriref>
 			<uriref uri="https://webstore.iec.ch/publication/67554" filename="IEC 60601-1-2 2014 AMD1 2020">
-				<select-tag tagname="span">
-					<hexists value="2020-09-01" what="issue date"/>
-					<hexists value="4.1" what="version"/>
-					<hexists value="2028" what="review year"/>
-				</select-tag>
+				<hpathdate path="//*[@class=&quot;iec-table&quot;][1]/tbody/tr[2]/td[2]" format="yyyy-MM-dd" />
+				<hpathequals path="//*[@class=&quot;iec-table&quot;][1]/tbody/tr[3]/td[2]" value = "4.1" />
 			</uriref>
 			<uriref uri="https://webstore.iec.ch/publication/67381" filename="IEC 60601-1-6 2010 AMD1 2013 AMD2 2020">
-				<select-tag tagname="span">
-					<hexists value="2020-07-22" what="issue date"/>
-					<hexists value="3.2" what="version"/>
-					<hexists value="2028" what="review year"/>
-				</select-tag>
+				<hpathdate path="//*[@class=&quot;iec-table&quot;][1]/tbody/tr[2]/td[2]" format="yyyy-MM-dd" />
+				<hpathequals path="//*[@class=&quot;iec-table&quot;][1]/tbody/tr[3]/td[2]" value = "3.2" />
 			</uriref>
 			<uriref uri="https://webstore.iec.ch/publication/67382" filename="IEC 60601-1-9 2007 AMD1 2013 AMD2 2020">
-				<select-tag tagname="span">
-					<hexists value="2020-07-22" what="issue date"/>
-					<hexists value="1.2" what="version"/>
-					<hexists value="2028" what="review year"/>
-				</select-tag>
+				<hpathdate path="//*[@class=&quot;iec-table&quot;][1]/tbody/tr[2]/td[2]" format="yyyy-MM-dd" />
+				<hpathequals path="//*[@class=&quot;iec-table&quot;][1]/tbody/tr[3]/td[2]" value = "1.2" />
 			</uriref>
 			<uriref uri="https://webstore.iec.ch/publication/3587" filename="IEC 60825-1 2014">
-				<select-tag tagname="span">
-					<hexists value="2014-05-15" what="issue date"/>
-					<hexists value="3.0" what="version"/>
-					<hexists value="2025" what="review year"/>
-				</select-tag>
+				<hpathdate path="//*[@class=&quot;iec-table&quot;][1]/tbody/tr[2]/td[2]" format="yyyy-MM-dd" />
+				<hpathequals path="//*[@class=&quot;iec-table&quot;][1]/tbody/tr[3]/td[2]" value = "3.0" />
 			</uriref>
 			<uriref uri="https://webstore.iec.ch/publication/6792" filename="IEC 62304 2006">
-				<select-tag tagname="span">
-					<hexists value="2006-05-09" what="issue date"/>
-					<hexists value="1.0" what="version"/>
-					<hexists value="2026" what="review year"/>
-				</select-tag>
+				<hpathdate path="//*[@class=&quot;iec-table&quot;][1]/tbody/tr[2]/td[2]" format="yyyy-MM-dd" />
+				<hpathequals path="//*[@class=&quot;iec-table&quot;][1]/tbody/tr[3]/td[2]" value = "1.0" />
 			</uriref>
 			<uriref uri="https://webstore.iec.ch/publication/67220" filename="IEC 62366-1 2015 AMD1 2020">
-				<select-tag tagname="span">
-					<hexists value="2020-06-17" what="issue date"/>
-					<hexists value="1.1" what="version"/>
-					<hexists value="2026" what="review year"/>
-				</select-tag>
+				<hpathdate path="//*[@class=&quot;iec-table&quot;][1]/tbody/tr[2]/td[2]" format="yyyy-MM-dd" />
+				<hpathequals path="//*[@class=&quot;iec-table&quot;][1]/tbody/tr[3]/td[2]" value = "1.1" />
 			</uriref>
 			<uriref uri="https://webstore.iec.ch/publication/24664" filename="IEC TR 62366-2 2016">
-				<select-tag tagname="span">
-					<hexists value="2016-04-27" what="issue date"/>
-					<hexists value="1.0" what="version"/>
-					<hexists value="2026" what="review year"/>
-				</select-tag>
+				<hpathdate path="//*[@class=&quot;iec-table&quot;][1]/tbody/tr[2]/td[2]" format="yyyy-MM-dd" />
+				<hpathequals path="//*[@class=&quot;iec-table&quot;][1]/tbody/tr[3]/td[2]" value = "1.0" />
 			</uriref>
 			<uriref uri="https://webstore.iec.ch/publication/7076" filename="IEC 62471 2006">
-				<select-tag tagname="span">
-					<hexists value="2006-07-26" what="issue date"/>
-					<hexists value="1.0" what="version"/>
-					<hexists value="2024" what="review year"/>
-				</select-tag>
+				<hpathdate path="//*[@class=&quot;iec-table&quot;][1]/tbody/tr[2]/td[2]" format="yyyy-MM-dd" />
+				<hpathequals path="//*[@class=&quot;iec-table&quot;][1]/tbody/tr[3]/td[2]" value = "1.0" />
 			</uriref>
 		</html-reference>
 	</regulatory>
 	
 	<regulatory name="EST" testid="2">
+	<!--
 		<html-reference>
 			<uriref uri="https://www.evs.ee/en/evs-en-556-1-2002" filename="EN 556-1">
 				<select-tag tagname="div">
@@ -185,6 +205,8 @@
 				<hpathequals path="//*[@id=&quot;product-details-form&quot;]/div[1]/div[2]/div[7]/div/div/div[2]/div[2]/div[1]/div/i" attr="class" value="fas fa-check-circle green" what="validity"/>
 			</uriref>
 		</html-reference>
+		-->
+		<evn-reference/>
 	</regulatory>
 
 	<regulatory name="DIN" testid="3">
@@ -205,7 +227,7 @@
 
 			<uriref uri="https://eur-lex.europa.eu/legal-content/en/ALL/?uri=CELEX%3A32006R1907" filename="EU Regulation No 1907-2006.html">
 				<hpathcontains path="//*[@id=&quot;title&quot;]/text()" value="1907/2006" what="directive number"/>
-				<hpathcontains path="//*[@id=&quot;PP1Contents&quot;]/div/p[5]/a" value="01/12/2023" what="valid date" />
+				<hpathcontains path="//*[@id=&quot;PP1Contents&quot;]/div/p[5]/a" value="01/12/2022" what="valid date" />
 			</uriref>
 
 			<uriref uri="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32017R0745" filename="EU Medizinprodukte.html">
@@ -263,7 +285,7 @@
 		<selenium-reference uri="https://laws-lois.justice.gc.ca/eng/regulations/sor-98-282/" filename="SOR98_282">
 			<webelement path="//*[@id='assentedDate']">
 				<scontains value="Regulations are current to 2024-03-06" what="validity date" />
-				<scontains value="on 2024-01-03" what="ammendment date" />
+				<scontains value="on 2023-01-03" what="ammendment date" />
 			</webelement>
 			<webelement path="/html/body/div/div/main/div[2]/div/table/tbody/tr[8]/td[1]">
 				<sequals value="SOR/2020-262" what="name" />
@@ -280,14 +302,14 @@
 				<select-tag tagname="span">
 					<hexists value="Latest version" what="latest version"/>
 					<hexists value="In force" what="state"/>
-					<hexists value="21 September 2023" what="issue date"/>
+					<hexists value="21 September 2022" what="issue date"/>
 				</select-tag>
 			</uriref>
 			<uriref uri="https://www.legislation.gov.au/F2002B00237/latest/text" filename="Therapeutic Goods (Medical Devices) Regulations 2002.html">
 				<select-tag tagname="span">
 					<hexists value="Latest version" what="latest version"/>
 					<hexists value="In force" what="state"/>
-					<hexists value="01 January 2024" what="issue date"/>
+					<hexists value="01 January 2023" what="issue date"/>
 				</select-tag>
 			</uriref>
 		</html-reference>
@@ -304,26 +326,21 @@
 	<regulatory name="CH" testid="B">
 		<selenium-reference uri="https://www.fedlex.admin.ch/eli/cc/2020/552/de" filename="MepV SR 812-213">
 			<webelement path="//*[@id=&quot;preface&quot;]/p[2]">
-				<sequals value="vom 1. Juli 2020 (Stand am 1. November 2023)" />
+				<sequals value="vom 1. Juli 2020 (Stand am 1. November 2022)" />
 			</webelement>
 		</selenium-reference>
 	</regulatory>
-	
+
 	<regulatory name="IMDRF" testid="C">
 		<imdrf-reference />
 	</regulatory>
-	
+
 	<regulatory name="UK" testid="D">
 		<html-reference>
 			<uriref uri="https://www.gov.uk/guidance/regulating-medical-devices-in-the-uk" filename="UK Regulation of medical devices.html">
-			<!--
-				<select-tag tagname="dl">
-					<hexists value="Last updated" what="last update" />
-					<hexists value="8 February 2024" what="udpate date" />
-				</select-tag>
-				-->
 				<hpathcontains path="//*[@id=&quot;content&quot;]/div[2]/div/div[1]/div/dl/dt[3]" value="Last updated" what="last update" />
-				<hpathcontains path="//*[@id=&quot;content&quot;]/div[2]/div/div[1]/div/dl/dd[3]" value="8 February 2024" what="udpate date" />
+<!--				<hpathcontains path="//*[@id=&quot;content&quot;]/div[2]/div/div[1]/div/dl/dd[3]" value="8 February 2023" what="udpate date" /> -->
+				<hpathdate path="//*[@id=&quot;content&quot;]/div[2]/div/div[1]/div/dl/dd[3]" substring="(.*) — See all updates" format="d MMMM yyyy" />
 			</uriref>
 		</html-reference>
 	</regulatory>
@@ -365,5 +382,6 @@
 
 	</regulatory>
 -->
+
 </regulatories>
 					

@@ -2,8 +2,14 @@ package standard;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.jsoup.nodes.Element;
@@ -35,12 +41,8 @@ public class FetchHtml {
 	
 	private CheckPosition detectedDiff(String expectedValue, CheckPosition.Reason reason) {
 		if (firstDifference == null) {
-			try {
-				firstDifference = (CheckPosition)(CheckPosition.get().clone());
-				firstDifference.setExpectedValue(expectedValue);
-			} catch (CloneNotSupportedException e) {
-				System.out.println("CheckPosition cloning error!");
-			}
+			firstDifference = CheckPosition.get().clone();
+			firstDifference.setExpectedValue(expectedValue);
 		}
 		return firstDifference;
 	}
@@ -105,19 +107,57 @@ public class FetchHtml {
 		return this;
 	}
 
-	public FetchHtml checkXPathEquals(String xPath, String tag, String value) {
+	public FetchHtml checkXPathEquals(String xPath, String tag, String value, Predicate<String> toCheck) {
 		if (resultOK) {
 			Elements es = doc.selectXpath(xPath);
 			if (es.size() == 1) {
 				Element e = es.getFirst();
 				String referredValue = (tag == null || tag.isEmpty()) ? e.text() : e.attr(tag);
-				resultOK = referredValue.equals(value);
+				resultOK = toCheck.test(referredValue); // referredValue.equals(value);
 				if (!resultOK) { 
 					detectedDiff(value, CheckPosition.Reason.DIFFERENT)
 					.setPath(xPath)
 					.setTag(tag)
 					.setCurrentValue(referredValue);
 				}
+			} else {
+				System.out.println("Path not unique: " + xPath);
+			}
+		}
+		return this;
+	}
+	
+	public FetchHtml checkXPathDate(String xPath, String tag, String substringRegex, String format) {
+		if (resultOK) {
+			Elements es = doc.selectXpath(xPath);
+			if (es.isEmpty()) {
+				System.out.println("Path not found: " + xPath);
+			} else if (es.size() == 1) {
+				Element e = es.getFirst();
+				String referredValue = (tag == null || tag.isEmpty()) ? e.text() : e.attr(tag);
+				if (substringRegex != null && !substringRegex.isEmpty()) {
+					Pattern p = Pattern.compile(substringRegex);
+					Matcher m = p.matcher(referredValue);
+					if (m.matches()) {
+						referredValue = m.group(1);
+					}
+				}
+				try {
+					DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format).withLocale(Locale.ENGLISH).withZone(ZoneId.systemDefault());
+					LocalDate d = LocalDate.parse(referredValue, formatter);
+					resultOK = !CommonFunctions.get().isWithin(d);
+				} catch (Exception ex) {
+					System.out.format("Cannot convert  %s to date format: ", referredValue, format);
+					resultOK = false;
+				}
+				if (!resultOK) { 
+					detectedDiff(null, CheckPosition.Reason.DIFFERENT)
+					.setPath(xPath)
+					.setTag(tag)
+					.setCurrentValue(referredValue);
+				}
+			} else {
+				System.out.println("Path not unique: " + xPath);
 			}
 		}
 		return this;

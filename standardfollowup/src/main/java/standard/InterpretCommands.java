@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -29,6 +28,7 @@ public class InterpretCommands {
 	
 	public InterpretCommands(String testCases) {
 		common = CommonFunctions.get();
+		pos = CheckPosition.get();
 		this.testCases = testCases;
 	}
 
@@ -39,39 +39,23 @@ public class InterpretCommands {
 	}
 	
 	private Document loadCommands(Path commandFile) throws ParserConfigurationException, SAXException, IOException {
-		pos = CheckPosition.get();
 		DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 		documentBuilderFactory.setIgnoringComments(true);
 		DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
 		return documentBuilder.parse(commandFile.toFile());
 	}
 	
-	private  List<Element> getElements(Node aNode) {
-		NodeList children = aNode.getChildNodes();
-		List<Element> filtered = new ArrayList<>();
-		for (int i = 0; i < children.getLength(); i++) {
-			Node child = children.item(i);
-			if (child.getNodeType() == Node.ELEMENT_NODE) {
-				filtered.add((Element)child);
-			}
-		}
-		return filtered;
-	}
-	
 	private void executeCommands(Document document) throws IOException, URISyntaxException {
 		Element root = document.getDocumentElement();
-//		echo(root);
-//		NodeList regulatoryInstitutes = root.getChildNodes();
-//		for (int i = 0; i < regulatoryInstitutes.getLength(); i++) {
-//			Node regulatoryInstitute = regulatoryInstitutes.item(i);
-//			if (regulatoryInstitute.getNodeType() == Node.ELEMENT_NODE) {
-//				handleInstitute((Element)regulatoryInstitute);
-//			}
-//		}
-		
-		for (Element regulatoryInstitute : getElements(root)) {
-			System.out.format("--- %s %s%n", regulatoryInstitute.getAttribute("testid"), regulatoryInstitute.getAttribute("name"))
-;			handleInstitute(regulatoryInstitute);
+		List<Element> children = CommonFunctions.getElements(root);
+		Node standardNumbers = children.get(0);
+		StandardNumbers.create(standardNumbers);
+		for (Element regulatoryInstitute : children) {
+			if (!"standardNumbers".equals(regulatoryInstitute.getTagName())) {
+				String instituteName = regulatoryInstitute.getAttribute("name");
+				System.out.format("--- %s %s%n", regulatoryInstitute.getAttribute("testid"), instituteName);
+				handleInstitute(regulatoryInstitute);
+			}
 		}
 	}
 	
@@ -80,13 +64,15 @@ public class InterpretCommands {
 		String testId = institute.getAttribute("testid");
 		if (testCases == null || testCases.isEmpty() || testCases.contains(testId)) {
 			pos.setInstitute(instituteName);
-
 			NodeList sources = institute.getChildNodes();
 			for (int i = 0; i < sources.getLength(); i++) {
 				Node source = sources.item(i);
 				switch (source.getNodeName()) {
 				case "iso-reference":
 					handleISO(source);
+					break;
+				case "evn-reference":
+					handleEVN(source);
 					break;
 				case "imdrf-reference":
 					handleImdrf();
@@ -117,17 +103,15 @@ public class InterpretCommands {
 	}
 	
 	private void handleISO(Node isoNode) {
-		List<String> numbers = new ArrayList<>();
-		for (Element numberNode : getElements(isoNode)) {
-			numbers.add(numberNode.getTextContent());
-		}
-//		NodeList numberNodes = isoNode.getChildNodes();
-//		for (int i = 0; i < numberNodes.getLength(); i++) {
-//			Node numberNode = numberNodes.item(i);
-//			numbers.add(numberNode.getTextContent());
-//		}
 		ReadISO obj = new ReadISO();
-		obj.setIsoNumbers(numbers);
+		obj.collect();
+		obj.removeUnchanged();
+		obj.evaluate();
+		ok &= obj.isOk();
+	}
+
+	private void handleEVN(Node isoNode) {
+		ReadEvs obj = new ReadEvs();
 		obj.collect();
 		obj.removeUnchanged();
 		obj.evaluate();
@@ -170,12 +154,16 @@ public class InterpretCommands {
 //			pos.uri = uri;
 //			handleHtmlTag(uriRef);
 //		}
-		for (Element uriRef : getElements(sourceN)) {
+		for (Element uriRef : CommonFunctions.getElements(sourceN)) {
 			String uri = ((Element)uriRef).getAttribute("uri");
 			String fileName = uriRef.getAttribute("filename");
 			pos.setUri(uri);
 			pos.setFileName(fileName);
-			handleHtmlStruct(uriRef);
+			try {
+				handleHtmlStruct(uriRef);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	
@@ -191,7 +179,7 @@ public class InterpretCommands {
 //			ok &= html.isResultOK();
 //		}		
 		FetchHtml html = new FetchHtml(pos.getUri(), pos.getFileName());
-		for (Element uriStructElement : getElements(uriRef)) {
+		for (Element uriStructElement : CommonFunctions.getElements(uriRef)) {
 			switch (uriStructElement.getNodeName()) {
 			case "select-tag":
 				handleSelectedTags(uriStructElement, html);
@@ -201,6 +189,9 @@ public class InterpretCommands {
 				break;
 			case "hpathcontains":
 				handlePathConditions(uriStructElement, html, false);
+				break;
+			case "hpathdate":
+				handlePathDate(uriStructElement, html);
 				break;
 			default:
 				System.out.println("Illegal XML tag: " + uriStructElement.getNodeName());
@@ -243,7 +234,7 @@ public class InterpretCommands {
 		String tagName = tagRef.getAttribute("tagname");
 		pos.setTag(tagName);
 		html.select(tagName);
-		for (Element conditionRef : getElements(tagRef)) {
+		for (Element conditionRef : CommonFunctions.getElements(tagRef)) {
 			String conditionValue = conditionRef.getAttribute("value");
 			String conditionWhat = conditionRef.getAttribute("what");
 			pos.setWhat(conditionWhat);
@@ -270,18 +261,28 @@ public class InterpretCommands {
 	private void handlePathConditions(Element conditionRef, FetchHtml html, boolean equlity) {
 		String path = conditionRef.getAttribute("path");
 		String attr = conditionRef.getAttribute("attr");
-		String conditionValue = conditionRef.getAttribute("value");
+		final String conditionValue = conditionRef.getAttribute("value");
 		String conditionWhat = conditionRef.getAttribute("what");
 		pos.setPath(path);
 		pos.setTag(attr);
 		pos.setWhat(conditionWhat);
 		if (equlity) {
-			html.checkXPathEquals(path, attr, conditionValue);
+			html.checkXPathEquals(path, attr, conditionValue, (v) -> v.equals(conditionValue));
 		} else {
-			html.checkXPathContains(path, attr, conditionValue);
+			html.checkXPathEquals(path, attr, conditionValue, v -> v.contains(conditionValue));
 		}
 	}
-	
+
+	private void handlePathDate(Element conditionRef, FetchHtml html) {
+		String path = conditionRef.getAttribute("path");
+		String attr = conditionRef.getAttribute("attr");
+		final String substring = conditionRef.getAttribute("substring");
+		final String format = conditionRef.getAttribute("format");
+		pos.setPath(path);
+		pos.setTag(attr);
+		html.checkXPathDate(path, attr, substring, format);
+	}
+
 	private void handleSelenium(Node sourceN) throws IOException {
 		String uri = ((Element)sourceN).getAttribute("uri");
 		try (Selenium selenium = new Selenium(uri)) {
@@ -293,7 +294,7 @@ public class InterpretCommands {
 //				WebElement e = selenium.findElementByXpathwait(path);
 //				handleSeleniumConditions(selenium, webElementN, e);
 //			}
-			for (Element webElement : getElements(sourceN)) {
+			for (Element webElement : CommonFunctions.getElements(sourceN)) {
 				String path = webElement.getAttribute("path");
 				pos.setPath(path);
 				WebElement e = selenium.findElementByXpathwait(path);
@@ -322,7 +323,7 @@ public class InterpretCommands {
 //				break;
 //			}
 //		}
-		for (Element seleniumCondition : getElements(webElement)) {
+		for (Element seleniumCondition : CommonFunctions.getElements(webElement)) {
 			String value = seleniumCondition.getAttribute("value");
 			String conditionWhat = seleniumCondition.getAttribute("what");
 			pos.setWhat(conditionWhat);

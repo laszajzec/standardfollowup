@@ -7,8 +7,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.concurrent.Callable;
 
@@ -27,20 +25,18 @@ import picocli.CommandLine.Option;
  * typ1: download all documents
  * typ2: download list of documents
  * typ3: save list of html
- * typ4: sepcial case
+ * typ4: special case
  */
 @Command(name = "checksum", mixinStandardHelpOptions = true, version = "checksum 4.0", description = "Prints the checksum (SHA-256 by default) of a file to STDOUT.")
 public class RegulatioryChanges implements Callable<Integer> {
 
 	private CommonFunctions common;
-	private Path oldDir;
-	private Path newDir;
 
 	@Option(names = { "-b", "--base" }, defaultValue="C:/temp/Standards", description = "Base of all collected standard")
 	Path baseDir;
 
-	@Option(names = { "-o", "--old" }, description = "Directory to compare with")
-	String oldDirArg;
+	@Option(names = { "-c", "--comparedir" }, description = "Directory to compare with")
+	String compareDirArg;
 
 	@Option(names = { "-n", "--new" }, description = "Directory to load current state")
 	String newDirArg;
@@ -48,8 +44,11 @@ public class RegulatioryChanges implements Callable<Integer> {
 	@Option(names = { "-t", "--test" }, description = "Which test case should run", defaultValue="0123456789ABCDEF")
 	String testCase;
 
-	@Option(names = { "-l", "--lastcheck" }, description = "Date of last check as yyyy-mm-dd")
-	String dateOfLastCheckString;
+	@Option(names = { "-f", "--checkfrom" }, description = "Date start of checking (inclusive) as yyyy-mm-dd")
+	String dateOfCheckFromString;
+
+	@Option(names = { "-u", "--checkuntil" }, description = "Date end of checking (inclusive) as yyyy-mm-dd")
+	String dateOfCheckUntilString;
 
 	@Option (names = { "-r", "--reducedir" }, defaultValue="false",  description = "Deletes identical old files")
 	boolean reduceDir;
@@ -79,35 +78,26 @@ public class RegulatioryChanges implements Callable<Integer> {
 	}
 
 	private void doIt() throws IOException, URISyntaxException, ParserConfigurationException, SAXException {
-		LocalDate dateOfLastCheck = null;
-		if (dateOfLastCheckString != null) {
-			try {
-				dateOfLastCheck = LocalDate.parse(dateOfLastCheckString, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-			} catch (DateTimeParseException e) {
-				System.out.println("Wrong last check date format, yuse yyyy-mm-dd");
-				return;
-			}
+		LocalDate dateOfCheckFrom = null;
+		if (dateOfCheckFromString != null) {
+				dateOfCheckFrom = CommonFunctions.toDate(dateOfCheckFromString, "yyyy-MM-dd");
 		}
-
-		common = new CommonFunctions(baseDir, dateOfLastCheck);
+		LocalDate dateOfCheckUntil = dateOfCheckUntilString == null ? LocalDate.now() : CommonFunctions.toDate(dateOfCheckUntilString, "yyyy-MM-dd");
+		common = new CommonFunctions(baseDir, dateOfCheckFrom, dateOfCheckUntil);
 		common.appendJournal("Seek for changes at : " + CommonFunctions.dateAndTimeFormat.format(new Date()) + System.lineSeparator());
-		if (oldDirArg == null) {
-			oldDir = common.getLastDir();
+		if (compareDirArg == null) {
+			common.getLastDir();
 		} else {
-			oldDir = common.getBaseDirPath().resolve(oldDirArg);
-			if (oldDir != null && !Files.isDirectory(oldDir)) {
-				System.out.println("Not correct directory: " + oldDirArg);
-				throw new FileNotFoundException(oldDirArg);
-			}
+			common.setCompareDir(compareDirArg);
 		}
-		newDir = newDirArg == null ? null : common.getBaseDirPath().resolve(newDirArg);
+		Path newDir = newDirArg == null ? null : common.getBaseDirPath().resolve(newDirArg);
 		if (newDir != null && !Files.isDirectory(newDir)) {
 			System.out.println("Not correct directory: " + newDirArg);
-			throw new FileNotFoundException(oldDirArg);
+			throw new FileNotFoundException(compareDirArg);
 		}
 		
 		common.createNewDir(newDirArg);
-		if (oldDirArg == null) {
+		if (compareDirArg == null) {
 			common.getLastDir();
 		}
 		doitNew();

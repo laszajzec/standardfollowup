@@ -16,16 +16,20 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.CollectionUtils;
@@ -38,6 +42,9 @@ import org.jsoup.nodes.Document;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 public class CommonFunctions {
 	
@@ -54,36 +61,26 @@ public class CommonFunctions {
 	private static final String DOWNLOAD_HTML_DIR = "html";
 	private static final String DOWNLOAD_XML_DIR = "xml";
 	
-	
-	private static final List<String> ISO_STANDARDS = Arrays.asList(new String[]
-			{"4180","8429","8596","8612","9022-3","9801","10342","10343","10938","10993-1",
-			"10993-5","10993-7","10993-18","11135","11137-1","11607-1","11607-2","11737-1","12866","12867",
-			"13485","14971","15004-1","15223-1","15223-2","17664-1","17664-2","19011","19980","20417",
-			"22665"
-			,"15928-4"});
-	
-	
 	private final Path baseDirPath;
-	private Path newFilesDir;
 	private boolean isDirectoryFreshCreated = false;
 	private String checkingDate;
 	private StringBuilder protocol = new StringBuilder();
 	private String newDirName;
-	private String oldDirName;
-	private final LocalDate dateOfLastCheck;
+	private Path newDirPath;
+	private String compareDirName;
+	private Path compareDirPath;
+	private final LocalDate dateOfCheckFrom;
+	private final LocalDate dateOfCheckUntil;
 	private boolean protocolHeadMissing = true;
 	
 	public static CommonFunctions get() {
 		return INSTANCE;
 	}
 	
-	public CommonFunctions(Path baseDir, LocalDate lastCheckDate) throws IOException {
+	public CommonFunctions(Path baseDir, LocalDate dateOfCheckFrom, LocalDate dateOfCheckUntil) throws IOException {
 		this.baseDirPath = baseDir.resolve("PublicHealth");
-		if (lastCheckDate == null) {
-			dateOfLastCheck = readLastJournalDate();
-		} else {
-			dateOfLastCheck = lastCheckDate;
-		}
+		this.dateOfCheckFrom = dateOfCheckFrom == null ? dateOfCheckFrom = readLastJournalDate() : dateOfCheckFrom;
+		this.dateOfCheckUntil = dateOfCheckUntil;
 		checkingDate = dateAndTimeFormat.format(new Date());
 		if (!Files.isDirectory(baseDirPath)) {
 			System.out.println("Not correct directory: " + baseDirPath.toString());
@@ -95,17 +92,17 @@ public class CommonFunctions {
 	public void createNewDir(String existingDir) throws IOException {
 		if (existingDir == null) {
 			newDirName = checkingDate;
-			newFilesDir = baseDirPath.resolve(newDirName);
-			Files.createDirectory(newFilesDir);
+			newDirPath = baseDirPath.resolve(newDirName);
+			Files.createDirectory(newDirPath);
 			isDirectoryFreshCreated = true;
 		} else {
-			newFilesDir = baseDirPath.resolve(existingDir);
+			newDirPath = baseDirPath.resolve(existingDir);
 			isDirectoryFreshCreated = false;
 		}
 	}
 	
 	public Path createSubdirectory(String dirName) throws IOException {
-		Path subdir = newFilesDir.resolve(dirName);
+		Path subdir = newDirPath.resolve(dirName);
 		Files.createDirectory(subdir);
 		return subdir;
 	}
@@ -118,15 +115,41 @@ public class CommonFunctions {
 			Path oldDirPath = latestDir.toPath();
 			String separator = File.separatorChar == '\\' ? "\\\\" : File.separator;
 			String[] fileElements = latestDir.toString().split(separator);
-			oldDirName = fileElements[fileElements.length - 1];
+			compareDirName = fileElements[fileElements.length - 1];
 			return oldDirPath;
 		} else { 
 			return null;
 		}
 	}
 
+	public void setCompareDir(String oldDirArg) throws FileNotFoundException {
+		compareDirName = oldDirArg;
+		compareDirPath = getBaseDirPath().resolve(oldDirArg);
+		if (!Files.isDirectory(compareDirPath)) {
+			System.out.println("Not correct directory: " + oldDirArg);
+			throw new FileNotFoundException(oldDirArg);
+		}
+	}
+	
+	public boolean isWithin(LocalDate aDate) {
+		return !aDate.isBefore(dateOfCheckFrom) && !aDate.isAfter(dateOfCheckUntil);
+	}
+	
+	public static LocalDate toDate(String aDate, String aFormat) {
+		try {
+			return LocalDate.parse(aDate, DateTimeFormatter.ofPattern(aFormat));
+		} catch (DateTimeParseException e) {
+			System.out.format("Wrong date format %s, use %s%n", aDate, aFormat);
+			return null;
+		}
+	}
+
 	public boolean areFilesIdentical(File file1, File file2) throws IOException {
+		if (!file1.exists() || !file2.exists()) {
+			return false;
+		}
 		if (file1.toString().endsWith(".pdf")) {
+			/*
 			String content1 = getPdfContent(file1.toPath());
 			String content2 = getPdfContent(file2.toPath());
 			if (content1.length() != content2.length()) 
@@ -135,6 +158,8 @@ public class CommonFunctions {
 				return false;
 			}
 			return true;
+			*/
+			return FileUtils.contentEquals(file1, file2);
 		} else {
 			return FileUtils.contentEquals(file1, file2);
 		}
@@ -199,11 +224,11 @@ public class CommonFunctions {
 	}
 	
 	public Path getOldEquivalent(File aFile) {
-		return Paths.get(aFile.toString().replace(newDirName, oldDirName));
+		return Paths.get(aFile.toString().replace(newDirName, compareDirName));
 	}
 
 	public Path getOldEquivalent(Path aFile) {
-		return Paths.get(aFile.toString().replace(newDirName, oldDirName));
+		return Paths.get(compareDirName);
 	}
 
 	private String getFileName(String uriString) throws URISyntaxException {
@@ -241,7 +266,7 @@ public class CommonFunctions {
 	
 	public Path getDestination(String dir, String... subdirs) {
 		Path targetFile = baseDirPath
-				.resolve(newFilesDir)
+				.resolve(newDirPath)
 				.resolve(dir);
 		for (String aSubdir : subdirs) {
 			targetFile = targetFile.resolve(aSubdir);
@@ -253,9 +278,16 @@ public class CommonFunctions {
 		int counter = 0;
 		Path fileNamePath = Paths.get(fileName.replace("%20", " "));
 		Path targetFile = getDestination(dir, subdirs).resolve(fileNamePath);
-		while (Files.exists(targetFile)) {
+		while (true) {
+			boolean found = false;
+			try {
+				found = Files.exists(targetFile);
+			} catch (Exception ex) {
+				// do nothing
+			}
+			if (!found) break;
 			fileNamePath = Paths.get(String.format("%s_%03d", fileName, counter));
-			targetFile = baseDirPath.resolve(newFilesDir).resolve(fileNamePath);
+			targetFile = baseDirPath.resolve(newDirPath).resolve(fileNamePath);
 			counter++;
 		}
 		return targetFile;
@@ -274,13 +306,16 @@ public class CommonFunctions {
 	}
 
 	public File downloadHtmlToFile(String uri, String fileName) throws IOException, URISyntaxException {
-	    Path destination = getFilePath(fileName, DownloadDir.HTML);
-		File file = destination.toFile();
+		return downloadHtmlToFile(uri, getFilePath(fileName, DownloadDir.HTML));
+	}
+
+	public static File downloadHtmlToFile(String uri, Path filePath) throws IOException, URISyntaxException {
+		File file = filePath.toFile();
 		System.out.format("Download html: %s to %s%n", uri, file);
 		FileUtils.copyURLToFile(new URI(uri).toURL(), file);
 		return file;
 	}
-	
+
 	public Document downloadFileLink(String uriStringP, String prefix, DownloadDir dir, String fileName) throws IOException, URISyntaxException {
 		String uriString = uriStringP.startsWith("http") ? uriStringP : prefix + uriStringP;
 	    Path destination = getFilePath(fileName, dir);
@@ -299,7 +334,11 @@ public class CommonFunctions {
 		Path targetFileString = getDestinationIntern(fileName, getRelDir(dir), subdir);
 		File targetFile = targetFileString.toFile();
 		System.out.format("Download: %s to %s%n", fileUri, targetFile);
-		FileUtils.copyURLToFile(uri.toURL(), targetFile);
+		try {
+			FileUtils.copyURLToFile(uri.toURL(), targetFile);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		return targetFile;
 	}
 
@@ -315,21 +354,17 @@ public class CommonFunctions {
 
 
 	public Path getNewFilesDir() {
-		return newFilesDir;
+		return newDirPath;
 	}
 	
 	public void setNewFilesDir(Path newFilesDir) {
-		this.newFilesDir = newFilesDir;
+		this.newDirPath = newFilesDir;
 	}
 
 	public Path getBaseDirPath() {
 		return baseDirPath;
 	}
 	
-	public List<String> getIsoStandards() {
-		return ISO_STANDARDS;
-	}
-
 	public boolean isDirectoryFreshCreated() {
 		return isDirectoryFreshCreated;
 	}
@@ -384,13 +419,17 @@ public class CommonFunctions {
 	
 	public void appendProtocol(CheckPosition pos) {
 		if (protocolHeadMissing) {
-			appendProtocolLn("Institute;File;URI;Reason;Tag;Path;What;Expected;Found");
+			appendProtocolLn("Institute;Id;Date;File;URI;Reason;Tag;Path;What;Expected;Found");
 			protocolHeadMissing = false;
 		}
 		StringBuilder txt = new StringBuilder();
 		txt.append("\"");
 		txt.append(pos.getInstitute());
 		txt.append("\";\"");
+		txt.append(pos.getId());
+		txt.append("\";");
+		txt.append(pos.getChangeDate());
+		txt.append(";\"");
 		txt.append(pos.getFileName());
 		txt.append("\";\"");
 		txt.append(pos.getUri());
@@ -416,7 +455,7 @@ public class CommonFunctions {
 	}
 
 	public LocalDate getDateOfLastCheck() {
-		return dateOfLastCheck;
+		return dateOfCheckFrom;
 	}
 
 	public String getPdfContent(Path inFilePath) throws FileNotFoundException, IOException {
@@ -494,7 +533,7 @@ public class CommonFunctions {
 	}
 
 	public void reduceOldDir() throws IOException {
-		Files.walkFileTree(newFilesDir, new SimpleFileVisitor<Path>() {
+		Files.walkFileTree(newDirPath, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
             	Path oldFile = getOldEquivalent(file);
@@ -511,5 +550,41 @@ public class CommonFunctions {
             }
 		});
 	}
+	
+	public static List<String> buildClientList(String clientString) {
+		String uniform = clientString.replace(";", ",");
+		uniform = clientString.replace(" ", ",");
+		String[] tokens = uniform.split(",");
+		return Arrays.asList(tokens);
+	}
+	
+	private final Pattern dateErr1 = Pattern.compile(".*\\w\\d\\d\\d\\d");
+	public LocalDate dateFromMonthName(String dateValue) {
+		try {
+			String modifiedDateValue = dateValue.trim();
+			if (dateErr1.matcher(modifiedDateValue).matches()) {
+				modifiedDateValue = modifiedDateValue.substring(0, modifiedDateValue.length() - 4) + " " + modifiedDateValue.substring(modifiedDateValue.length() - 4);
+			}
+			modifiedDateValue = Character.isDigit(modifiedDateValue.charAt(0)) ? modifiedDateValue : "1 " + modifiedDateValue;
+			LocalDate convertedDate = LocalDate.parse(modifiedDateValue, DateTimeFormatter.ofPattern("d MMMM yyyy").withLocale(Locale.ENGLISH).withZone(ZoneId.systemDefault()));
+			return convertedDate;
+		} catch (Exception e) {
+			System.out.format("Illegal date format %e for %s", e, dateValue);
+			return null;
+		}
+	}
+	
+	public static List<Element> getElements(Node aNode) {
+		NodeList children = aNode.getChildNodes();
+		List<Element> filtered = new ArrayList<>();
+		for (int i = 0; i < children.getLength(); i++) {
+			Node child = children.item(i);
+			if (child.getNodeType() == Node.ELEMENT_NODE) {
+				filtered.add((Element)child);
+			}
+		}
+		return filtered;
+	}
+
 	
 }

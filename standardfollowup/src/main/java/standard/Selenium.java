@@ -3,6 +3,7 @@ package standard;
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 import java.util.function.Function;
 
 import org.openqa.selenium.By;
@@ -26,19 +27,13 @@ public class Selenium implements Closeable {
 		ChromeOptions option = new ChromeOptions();
 		option.addArguments("headless");
 		driver = new ChromeDriver(option);
-		driver.get(uri);
-	}
-
-	private CheckPosition detectedDiff(String expectedValue, CheckPosition.Reason reason) {
-		if (firstDifference == null) {
-			try {
-				firstDifference = (CheckPosition)(CheckPosition.get().clone());
-				firstDifference.setExpectedValue(expectedValue);
-			} catch (CloneNotSupportedException e) {
-				System.out.println("CheckPosition cloning error!");
-			}
+		if (uri != null && !uri.isEmpty()) {
+			driver.get(uri);
 		}
-		return firstDifference;
+	}
+	
+	public void setUri(String uri) {
+		driver.get(uri);
 	}
 
 	public WebElement findElementByXpath(String xPath) {
@@ -46,6 +41,11 @@ public class Selenium implements Closeable {
 		return driver.findElement(By.xpath(xPath));
 	}
 
+	public List<WebElement> findElements(String xPath) {
+		return driver.findElements(By.xpath(xPath));
+	}
+
+	
 	public WebElement findElementByXpathwait(String xPath) {
 		lastPath = xPath;
 		Wait<WebDriver> wait = new FluentWait<WebDriver>(driver)
@@ -88,6 +88,14 @@ public class Selenium implements Closeable {
 		}
 	}
 	
+	private CheckPosition detectedDiff(String expectedValue, CheckPosition.Reason reason) {
+		if (firstDifference == null) {
+			firstDifference = (CheckPosition.get().clone());
+			firstDifference.setExpectedValue(expectedValue);
+		}
+		return firstDifference;
+	}
+
 	public boolean isResultOK() {
 		if (!resultOK) {
 			CommonFunctions.get().appendProtocol(firstDifference);

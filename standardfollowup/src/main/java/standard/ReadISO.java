@@ -19,30 +19,33 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import standard.CheckPosition.Reason;
+
 public class ReadISO implements RegulatorySource {
 
+	private static final boolean TEST = false;
 	private static final String UPDATE_LIST_URI = "https://www.iso.org/iso-update.html";
 	private static final String DOWNLOAD_PREFIX = "https://www.iso.org/";
 	private static final String[] PREFIXES = new String[]{"/TS", "/TR", "/PAS", "/IEC TR", "/IEC TS", "/IEC", "/ASTM", "/PRF", "/IEEE"};
 	private static final Pattern ISO_DATE_PATTERN = Pattern.compile("ISOupdate[\\s-](\\w+)[\\s-](\\d+)\\..*");
 
 	private final CommonFunctions common;
-	private List<String> ignore = new ArrayList<>();
-	private List<Deviation> changedStandards = new ArrayList<>();
-	private List<Deviation> withdrawnedStandards = new ArrayList<>();
-	private List<Path> fileList;
+	private final CheckPosition pos;
+	private final List<String> ignore = new ArrayList<>();
+	private final List<Deviation> changedStandards = new ArrayList<>();
+	private final List<Deviation> withdrawnedStandards = new ArrayList<>();
+	private List<String> pdfRefs = new ArrayList<>();
 	private boolean ok = true;
-	private List<String> isoNumbers;
 	
 	public ReadISO() {
 		common = CommonFunctions.get();
-		isoNumbers = common.getIsoStandards();
+		pos = CheckPosition.get();
 	}
 	
 	@Override
 	public void collect() {
 		try {
-			fileList = downloadFiles();
+			downloadLinks();
 		} catch (IOException | URISyntaxException e) {
 			System.out.println("Exception in ReadISO collect: " + e.getMessage());
 			e.printStackTrace();
@@ -55,29 +58,26 @@ public class ReadISO implements RegulatorySource {
 
 	@Override
 	public void evaluate() {
-		try {
-			checkFiles(fileList);
-		} catch (IOException e) {
-			System.out.println("Exception in ReadISO evaluate: " + e.getMessage());
-			e.printStackTrace();
-		}
-		CheckPosition pos = CheckPosition.get().setInstitute("ISO");
+		checkFiles();
 		writeToProtocol(changedStandards, CheckPosition.Reason.DIFFERENT, pos);
 		writeToProtocol(withdrawnedStandards, CheckPosition.Reason.REWOKED, pos);
 		System.out.format("Result: %d standards changed, %d withdrawn%n", changedStandards.size(), withdrawnedStandards.size());
 	}
 
-	private List<Path> downloadFiles() throws IOException, URISyntaxException {
-		List<Path> downloadedFiles = new ArrayList<>();
-		List<String> pdfRefs = collectDocumentUri();
-//		common.createSubdirectory("iso");
-		for (String fileRefAsUri : pdfRefs) {
-			if (newerAsLast(fileRefAsUri)) {
-			File downloadedFile = common.downloadFileToSub(DOWNLOAD_PREFIX + fileRefAsUri, CommonFunctions.DownloadDir.SUMMARY, "iso");
-			downloadedFiles.add(downloadedFile.toPath());
+	private void downloadLinks() throws IOException, URISyntaxException {
+		Document doc = Jsoup.connect(UPDATE_LIST_URI).get();
+		Elements links = doc.select("a");
+		for (Element e : links) {
+			String linkAttr = e.attr("href");
+			//			System.out.println(linkAttr);
+			if (linkAttr.isEmpty() || ignore.stream().anyMatch(pattern -> linkAttr.matches(pattern))) {
+				if (!linkAttr.isEmpty()) System.out.println("Ignore: " + linkAttr);
+			} else {
+				if (linkAttr.endsWith(".pdf") && isNewLink(e, common.getDateOfLastCheck())) {
+					pdfRefs.add(linkAttr);
+				}
 			}
 		}
-		return downloadedFiles;
 	}
 	
 	private List<String> collectDocumentUri() throws IOException {
@@ -105,20 +105,30 @@ public class ReadISO implements RegulatorySource {
 			String month = m.group(1);
 			String year = m.group(2);
 			LocalDate issueDate = LocalDate.of(Integer.parseInt(year), Month.valueOf(month.toUpperCase()), 1);
-			return issueDate.isAfter(dateOflastCheck);
+			return common.isWithin(issueDate);
 		} else {
 			System.out.println("No date match on ISO " + title);
 		}
 		return false;
 	}
 	
-	private void checkFiles(List<Path> downloadedFiles) throws FileNotFoundException, IOException {
-		for (Path aFile : downloadedFiles) {
-			checkPdf(aFile);
+	private void checkFiles() {
+		for (String fileRefAsUri : pdfRefs) {
+			try {
+				if (newerAsLast(fileRefAsUri)) {
+					File downloadedFile = common.downloadFileToSub(DOWNLOAD_PREFIX + fileRefAsUri, CommonFunctions.DownloadDir.SUMMARY, "iso");
+					pos.setFileLink(fileRefAsUri);
+					checkPdf(downloadedFile.toPath(), fileRefAsUri);
+				} else {
+					System.out.println("Contradiction of dates in ISO");
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	
-	private void checkPdf(Path inFile) throws FileNotFoundException, IOException {
+	private void checkPdf(Path inFile, String uri) throws FileNotFoundException, IOException {
 		System.out.println("------- Checking " + inFile);
 		String contentRaw = common.getPdfContent(inFile);
 		List<String> content = Arrays.asList(contentRaw.split("\\R"));
@@ -140,10 +150,12 @@ public class ReadISO implements RegulatorySource {
 		}
 		int endIndexWithdrawn = content.size();
 		
-		System.out.format("Line number changed:   %d end: %d%n", startIndexChanged, endIndexChanged);
-		System.out.format("Line number withdrawn: %d end: %d%n", startIndexWithdrawn, endIndexWithdrawn);
+		if (TEST) System.out.format("Line number changed:   %d end: %d%n", startIndexChanged, endIndexChanged);
+		if (TEST) System.out.format("Line number withdrawn: %d end: %d%n", startIndexWithdrawn, endIndexWithdrawn);
 		
+		pos.setReason(Reason.DIFFERENT);
 		selectIsoNumbers(startIndexChanged, endIndexChanged, content, changedStandards, inFile);
+		pos.setReason(Reason.REWOKED);
 		selectIsoNumbers(startIndexWithdrawn, endIndexWithdrawn, content, withdrawnedStandards, inFile);
 	}
 	
@@ -153,7 +165,9 @@ public class ReadISO implements RegulatorySource {
 			String line = content.get(i).trim();
 			if (continuationExpectedInNextLine && !line.isEmpty() && Character.isDigit(line.charAt(0))) {
 				if (canBeIsoNr(line)) {
-					result.add(new Deviation(line, inFile));
+					pos.setId(line);
+					common.appendProtocol(pos);
+//					result.add(new Deviation(line, inFile));
 				}
 				continuationExpectedInNextLine = false;
 			} else if (line.startsWith("ISO") || line.startsWith("IWA") || line.startsWith("IEC")) {
@@ -170,13 +184,15 @@ public class ReadISO implements RegulatorySource {
 						}
 					}
 					if (canBeIsoNr(rest)) {
-						result.add(new Deviation(rest, inFile));
+						pos.setId(rest);
+						common.appendProtocol(pos);
+						// result.add(new Deviation(rest, inFile));
 					}
 					continuationExpectedInNextLine = false;
 				}
 			} else {
 				if (!content.get(i).trim().isEmpty() && content.get(i).matches(".*\\d\\d\\d\\d.*")) {
-					System.out.format("                  Unknown line: %4d %s%n ", i, content.get(i));
+					System.out.format("                  Unknown line %4d: %s%n ", i, content.get(i));
 				}
 			}
 		}
@@ -195,8 +211,8 @@ public class ReadISO implements RegulatorySource {
 	private boolean canBeIsoNr(String line) {
 		int posOfColon = line.indexOf(":");
 		String nr = (posOfColon >= 0) ? line.substring(0, posOfColon) : line;
-		boolean isRelevant = isoNumbers.contains(nr);
-		System.out.println((isRelevant ? " + " : "   ") + nr);
+		boolean isRelevant = StandardNumbers.isOnList(nr);
+		if (TEST) System.out.println((isRelevant ? " + " : "   ") + nr);
 		return isRelevant;
 	}
 	
@@ -248,10 +264,6 @@ public class ReadISO implements RegulatorySource {
 		public String getDocumentName() {
 			return inDocument.getFileName().toString();
 		}
-	}
-
-	public void setIsoNumbers(List<String> isoNumbers) {
-		this.isoNumbers = isoNumbers;
 	}
 
 	public boolean isOk() {
