@@ -80,31 +80,31 @@ public class TestXpath {
 	}
 	
 	private boolean readPageAndStop(String uri) throws IOException {
-		try (Selenium selenium = new Selenium(uri)) {
-			List<WebElement> refs = selenium.findElements("//a[@href]");
-			for (WebElement el : refs) {
-				if (el.getText().startsWith("EVS")) {
-					System.out.format("+ %s           %s%n", el.getText(), el.getAttribute("href"));
-					WebElement parent1 = el.findElement(By.xpath(".."));
-					WebElement parent = parent1.findElement(By.xpath(".."));
-//					System.out.format("Parent: %s >%s<%n", parent.getTagName(), parent.getText());
-					List<WebElement> subElements = parent.findElements(By.cssSelector(".badge.product-info-badge"));
-//					System.out.format("Found %d subelements%n", subElements.size());
-					for (WebElement sub : subElements) {
-//						System.out.format("Sub: %s%n", sub.getText());
-						if (sub.getText().startsWith("Valid")) {
-							System.out.format("VALID %s           %s%n", el.getText(), sub.getText());
-						}
+		Selenium selenium = Selenium.get();
+		selenium.setUri(uri);
+		List<WebElement> refs = selenium.findElementsByXpeth("//a[@href]");
+		for (WebElement el : refs) {
+			if (el.getText().startsWith("EVS")) {
+				System.out.format("+ %s           %s%n", el.getText(), el.getAttribute("href"));
+				WebElement parent1 = el.findElement(By.xpath(".."));
+				WebElement parent = parent1.findElement(By.xpath(".."));
+				//					System.out.format("Parent: %s >%s<%n", parent.getTagName(), parent.getText());
+				List<WebElement> subElements = parent.findElements(By.cssSelector(".badge.product-info-badge"));
+				//					System.out.format("Found %d subelements%n", subElements.size());
+				for (WebElement sub : subElements) {
+					//						System.out.format("Sub: %s%n", sub.getText());
+					if (sub.getText().startsWith("Valid")) {
+						System.out.format("VALID %s           %s%n", el.getText(), sub.getText());
 					}
 				}
 			}
-			WebElement next = selenium.findElementByXpath("//a[@class=\"page-link\" and text()=\"Next\"]");
-			System.out.format("Next: %s%n", next.getText());
-			WebElement nextParent = next.findElement(By.xpath(".."));
-			String classes = nextParent.getAttribute("class");
-			System.out.format("Class: >%s<%n", classes);
-			return classes.contains("disabled");
 		}
+		WebElement next = selenium.findElementByXpath("//a[@class=\"page-link\" and text()=\"Next\"]");
+		System.out.format("Next: %s%n", next.getText());
+		WebElement nextParent = next.findElement(By.xpath(".."));
+		String classes = nextParent.getAttribute("class");
+		System.out.format("Class: >%s<%n", classes);
+		return classes.contains("disabled");
 	}
 	
 	private Elements testPath (Document doc, String path) {

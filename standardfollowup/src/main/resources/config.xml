@@ -8,7 +8,7 @@
 		num CDATA #REQUIRED
 		clients CDATA #REQUIRED>
 	<!ELEMENT num (#PCDATA)>
-	<!ELEMENT regulatory (iso-reference | evn-reference | imdrf-reference | eu-health | html-reference | file-reference | selenium-reference)+ >
+	<!ELEMENT regulatory (iso-reference | evn-reference | imdrf-reference | eu-health | bgmde-reference | html-reference | file-reference | selenium-reference)+ >
 	<!ATTLIST regulatory 
 		name ID #REQUIRED
 		testid CDATA #REQUIRED>
@@ -21,6 +21,7 @@
 	<!ELEMENT html-reference (uriref)+>
 
 	<!ELEMENT eu-health EMPTY>
+	<!ELEMENT bgmde-reference EMPTY>
 
 	<!ELEMENT uriref (select-tag | hpathequals | hpathcontains | hpathdate )+>
 	<!ATTLIST uriref 
@@ -243,6 +244,7 @@
 	</regulatory>
 
 	<regulatory name="DE" testid="5">
+		<bgmde-reference/>
 		<file-reference uri="https://www.bundesgesundheitsministerium.de/fileadmin/Dateien/3_Downloads/Gesetze_und_Verordnungen/GuV/R/Referentenentwurf_RISG.pdf" filename="MPEUAnpG.pdf"/>
 		<file-reference uri="https://www.bundesgesundheitsministerium.de/fileadmin/Dateien/3_Downloads/Gesetze_und_Verordnungen/GuV/M/RefE_MPEUAnpV.pdf" filename="MPEUAnpV.pdf"/>
 		<html-reference>

@@ -254,13 +254,16 @@ public class ReadISO implements RegulatorySource {
 	private static class Deviation {
 		private final String isoNumber;
 		private final Path inDocument;
+		
 		public Deviation(String isoNumber, Path inDocument) {
 			this.isoNumber = isoNumber;
 			this.inDocument = inDocument;
 		}
+		
 		public String getIsoNumber() {
 			return isoNumber;
 		}
+		
 		public String getDocumentName() {
 			return inDocument.getFileName().toString();
 		}

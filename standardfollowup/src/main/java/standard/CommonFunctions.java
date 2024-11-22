@@ -586,5 +586,12 @@ public class CommonFunctions {
 		return filtered;
 	}
 
-	
+	public LocalDate getDateOfCheckFrom() {
+		return dateOfCheckFrom;
+	}
+
+	public LocalDate getDateOfCheckUntil() {
+		return dateOfCheckUntil;
+	}
+
 }

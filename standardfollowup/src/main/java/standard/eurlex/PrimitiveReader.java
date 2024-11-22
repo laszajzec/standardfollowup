@@ -20,7 +20,9 @@ import org.json.simple.parser.ParseException;
 import standard.eurlex.dtos.DtoHelper;
 import standard.eurlex.dtos.EurLexDTO;
 
-
+/**
+ * Read EU documents API as JSON
+ */
 public class PrimitiveReader {
 	
 	private static final boolean fromUrl = false;

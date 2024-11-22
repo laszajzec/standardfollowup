@@ -1,5 +1,6 @@
 package standard;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -24,7 +25,7 @@ public class ReadEvs implements RegulatorySource {
 	final CheckPosition pos = CheckPosition.get();
 
 	public ReadEvs() {
-		selenium = new Selenium(null);
+		selenium = Selenium.get();
 	}
 
 
@@ -39,19 +40,19 @@ public class ReadEvs implements RegulatorySource {
 	}
 
 	@Override
-	public void evaluate() {
+	public void evaluate() throws IOException {
 		for (int i = 1; true; i++) {
 			String destination = String.format(destinationPattern, i);
 			System.out.format("--- Page %d%n", i);
-			if (readPageAndStop(destination)) break;
+			if (readPageAndReturnStop(destination)) break;
 		}
 	}
 
-	private boolean readPageAndStop(String uri) {
+	private boolean readPageAndReturnStop(String uri) {
 		try {
 			selenium.setUri(uri);
 			pos.setUri(uri);
-			List<WebElement> refs = selenium.findElements("//a[@href]");
+			List<WebElement> refs = selenium.findElementsByXpeth("//a[@href]");
 			for (WebElement el : refs) {
 				String content = el.getText();
 				if (hasPrefix(ISO_PREFIXES, content)) {

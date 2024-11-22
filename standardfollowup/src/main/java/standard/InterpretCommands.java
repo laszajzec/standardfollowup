@@ -80,6 +80,9 @@ public class InterpretCommands {
 				case "html-reference":
 					handleHtml(source);
 					break;
+				case "bgmde-reference":
+					handleBgmDe();
+					break;
 				case "file-reference":
 					handleFiles(source);
 					break;
@@ -110,7 +113,7 @@ public class InterpretCommands {
 		ok &= obj.isOk();
 	}
 
-	private void handleEVN(Node isoNode) {
+	private void handleEVN(Node isoNode) throws IOException {
 		ReadEvs obj = new ReadEvs();
 		obj.collect();
 		obj.removeUnchanged();
@@ -133,7 +136,14 @@ public class InterpretCommands {
 		obj.evaluate();
 		ok &= obj.isOk();
 	}
-	
+
+	private void handleBgmDe() {
+		ReadBgmDe obj = new ReadBgmDe();
+		obj.collect();
+		obj.evaluate();
+		ok &= obj.isOk();
+	}
+
 	private void handleFiles(Node sourceN) throws IOException, URISyntaxException {
 		Element sourceE = (Element)sourceN;
 		String uri = sourceE.getAttribute("uri");
@@ -285,23 +295,15 @@ public class InterpretCommands {
 
 	private void handleSelenium(Node sourceN) throws IOException {
 		String uri = ((Element)sourceN).getAttribute("uri");
-		try (Selenium selenium = new Selenium(uri)) {
-//			NodeList webElements = sourceN.getChildNodes();
-//			for (int i = 0; i < webElements.getLength(); i++) {
-//				Node webElementN = webElements.item(i);
-//				String path = ((Element)webElementN).getAttribute("path");
-//				pos.path = path;
-//				WebElement e = selenium.findElementByXpathwait(path);
-//				handleSeleniumConditions(selenium, webElementN, e);
-//			}
-			for (Element webElement : CommonFunctions.getElements(sourceN)) {
-				String path = webElement.getAttribute("path");
-				pos.setPath(path);
-				WebElement e = selenium.findElementByXpathwait(path);
-				handleSeleniumConditions(selenium, webElement, e);
-			}
-			selenium.isResultOK();
+		Selenium selenium = Selenium.get();
+		selenium.setUri(uri);
+		for (Element webElement : CommonFunctions.getElements(sourceN)) {
+			String path = webElement.getAttribute("path");
+			pos.setPath(path);
+			WebElement e = selenium.findElementByXpathwait(path);
+			handleSeleniumConditions(selenium, webElement, e);
 		}
+		selenium.isResultOK();
 	}
 	
 	private void handleSeleniumConditions(Selenium selenium, Element webElement, WebElement e) {

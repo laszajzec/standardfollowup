@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -16,6 +17,8 @@ import org.openqa.selenium.support.ui.FluentWait;
 import org.openqa.selenium.support.ui.Wait;
 
 public class Selenium implements Closeable {
+	
+	private static Selenium INSTANCE = null;
 
 	private final WebDriver driver;
 	private final boolean withTest = true;
@@ -23,13 +26,17 @@ public class Selenium implements Closeable {
 	private CheckPosition firstDifference;
 	private boolean resultOK = true;
 
-	public Selenium(String uri) {
+	private Selenium() {
 		ChromeOptions option = new ChromeOptions();
 		option.addArguments("headless");
 		driver = new ChromeDriver(option);
-		if (uri != null && !uri.isEmpty()) {
-			driver.get(uri);
+	}
+	
+	public static Selenium get() {
+		if (INSTANCE == null) {
+			INSTANCE = new Selenium();
 		}
+		return INSTANCE;
 	}
 	
 	public void setUri(String uri) {
@@ -41,10 +48,13 @@ public class Selenium implements Closeable {
 		return driver.findElement(By.xpath(xPath));
 	}
 
-	public List<WebElement> findElements(String xPath) {
+	public List<WebElement> findElementsByXpeth(String xPath) {
 		return driver.findElements(By.xpath(xPath));
 	}
 
+	public List<WebElement> findElementsByTag(String aTag) {
+		return driver.findElements(By.tagName(aTag));
+	}
 	
 	public WebElement findElementByXpathwait(String xPath) {
 		lastPath = xPath;
@@ -101,6 +111,11 @@ public class Selenium implements Closeable {
 			CommonFunctions.get().appendProtocol(firstDifference);
 		}
 		return resultOK;
+	}
+	
+	public void execute(WebElement e, String arg) {
+		JavascriptExecutor je = (JavascriptExecutor)driver;
+		je.executeScript(arg, e);
 	}
 
 	@Override
